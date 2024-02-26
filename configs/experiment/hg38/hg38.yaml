@@ -1,0 +1,55 @@
+# @package _global_
+defaults:
+  - /pipeline: hg38
+  - /model: ???  # Specify a model, e.g. model=mamba or model=hyena
+  - override /scheduler: cosine_warmup_timm
+
+task:
+  _name_: lm
+  loss:
+    _name_: cross_entropy
+    ignore_index: 4
+
+trainer:
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  accumulate_grad_batches: ${div_up:${train.global_batch_size}, ${eval:${trainer.devices} * ${dataset.batch_size} * ${trainer.num_nodes}}}
+  max_epochs: null
+  max_steps: 10000
+  precision: 16  # bf16 only a100
+  gradient_clip_val: 1.0
+  limit_val_batches: 0.125
+
+dataset:
+  batch_size: ${eval:1024//${trainer.devices}}
+  max_length: 1024
+  # optional, default is max_length
+  max_length_val: ${dataset.max_length}
+  max_length_test: ${dataset.max_length}
+  tokenizer_name: char
+  pad_max_length: null  # needed for bpe tokenizer
+  add_eos: true
+  rc_aug: false
+  num_workers: 12
+  use_fixed_len_val: false  # placing a fixed length val here, but it's really the test
+  mlm: false
+  mlm_probability: 0.0
+
+scheduler:
+  t_in_epochs: False
+  t_initial: ${eval:${trainer.max_steps}-${.warmup_t}}
+  warmup_prefix: True
+  warmup_lr_init: 1e-6
+  warmup_t: ${eval:0.1*${trainer.max_steps}}
+  lr_min: 1e-4
+
+optimizer:
+  lr: 6e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+
+train:
+  gpu_mem: ${eval:"round(float(__import__('subprocess').check_output('nvidia-smi -i 0 --query-gpu=memory.total --format=csv,noheader,nounits', shell=True).strip().decode()) / 1000)"}
+  seed: 2222
+  global_batch_size: 256  # effects the scheduler, need to set properly

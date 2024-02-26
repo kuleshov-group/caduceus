@@ -1,0 +1,56 @@
+# @package _global_
+defaults:
+  - /model: genomics_benchmark_cnn
+  - /pipeline: genomic_benchmark
+  - override /scheduler: cosine_warmup_timm
+
+# there are 8 datasets in this suite, choose 1 at a time, with their corresponding settings
+# name                                num_seqs        num_classes     median len    std
+# dummy_mouse_enhancers_ensembl       1210            2               2381          984.4
+# demo_coding_vs_intergenomic_seqs    100_000         2               200           0
+# demo_human_or_worm                  100_000         2               200           0
+# human_enhancers_cohn                27791           2               500           0
+# human_enhancers_ensembl             154842          2               269           122.6
+# human_ensembl_regulatory            289061          3               401           184.3
+# human_nontata_promoters             36131           2               251           0
+# human_ocr_ensembl                   174756          2               315           108.1
+
+task:
+  loss:
+    _name_: cross_entropy
+
+trainer:
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  accumulate_grad_batches: ${div_up:${train.global_batch_size}, ${eval:${trainer.devices} * ${dataset.batch_size} * ${trainer.num_nodes}}}
+  max_epochs: 100
+  precision: 16  # bf16 only a100
+  gradient_clip_val: 1.0
+
+encoder: id
+decoder: id
+
+dataset:
+  tokenizer_name: char
+  rc_aug: false  # reverse complement augmentation
+
+scheduler:
+  t_in_epochs: False
+  t_initial: ${eval:${div_up:${dataset.train_len}, ${train.global_batch_size}} * ${trainer.max_epochs}}
+  warmup_lr_init: 1e-6
+  warmup_t: ${eval:${div_up:${dataset.train_len}, ${train.global_batch_size}} * ${trainer.max_epochs} * 0.01}
+  lr_min: ${eval:0.1 * ${optimizer.lr}}
+
+
+optimizer:
+  lr: 6e-4
+  weight_decay: 0.1
+
+train:
+  gpu_mem: ${eval:"round(float(__import__('subprocess').check_output('nvidia-smi -i 0 --query-gpu=memory.total --format=csv,noheader,nounits', shell=True).strip().decode()) / 1000)"}
+  seed: 2222
+  global_batch_size: ${dataset.batch_size}
+  cross_validation: true
+  remove_test_loader_in_eval: true
+  pretrained_model_strict_load: false  # false allows encoder/decoder to be used if new model uses it
