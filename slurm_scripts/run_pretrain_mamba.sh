@@ -17,18 +17,24 @@ source setup_env.sh
 NUM_DEVICES=8
 
 # Run script
+SEQLEN=1024
+MAX_STEPS=10000
 D_MODEL=256
 N_LAYER=8
 LR="8e-3"
 RC_AUG="true"
-WANDB_NAME="mamba_ntp_rc_aug_seqlen-32k_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
+
+BATCH_SIZE=$(( 1048576 / SEQLEN ))
+SEQLEN_DIS="$(echo "scale=0; ${SEQLEN} / 1000" | bc)k"
+WANDB_NAME="mamba_ntp_rc_aug_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
 HYDRA_RUN_DIR="./outputs/pretrain/hg38/${WANDB_NAME}"
+
 mkdir -p "${HYDRA_RUN_DIR}"
 srun python -m train \
   experiment=hg38/hg38 \
-  callbacks.model_checkpoint_every_n_steps.every_n_train_steps=2000 \
-  dataset.max_length=1024 \
-  dataset.batch_size=$((1024 / NUM_DEVICES)) \
+  callbacks.model_checkpoint_every_n_steps.every_n_train_steps=500 \
+  dataset.max_length=${SEQLEN} \
+  dataset.batch_size=$(( BATCH_SIZE / NUM_DEVICES )) \
   dataset.mlm=false \
   dataset.mlm_probability=0.0 \
   dataset.rc_aug="${RC_AUG}" \
@@ -36,10 +42,10 @@ srun python -m train \
   model.config.d_model=${D_MODEL} \
   model.config.n_layer=${N_LAYER} \
   optimizer.lr="${LR}" \
-  train.global_batch_size=1024 \
-  trainer.max_steps=10000 \
+  train.global_batch_size=${BATCH_SIZE} \
+  trainer.max_steps=${MAX_STEPS} \
   trainer.devices=${NUM_DEVICES} \
-  +trainer.val_check_interval=2000 \
+  +trainer.val_check_interval=$(( MAX_STEPS / 5 )) \
   wandb.group=pretrain_hg38 \
   wandb.name="${WANDB_NAME}" \
   hydra.run.dir="${HYDRA_RUN_DIR}"

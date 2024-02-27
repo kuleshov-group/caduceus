@@ -19,27 +19,31 @@ export HYDRA_FULL_ERROR=1
 NUM_DEVICES=8
 
 # Run script
+SEQLEN=131072
+MAX_STEPS=50000
 D_MODEL=256
-N_LAYER=16
+N_LAYER=8
 LR="8e-3"
 BIDIRECTIONAL_STRATEGY="add"
 BIDIRECTIONAL_WEIGHT_TIE="true"
 RCPS="true"
 RC_AUG="false"
-MODEL_NAME="caduceus"
-WANDB_NAME="caduceus-ps_seqlen-131k_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
+
+BATCH_SIZE=$(( 1048576 / SEQLEN ))
+SEQLEN_DIS="$(echo "scale=0; ${SEQLEN} / 1000" | bc)k"
+WANDB_NAME="caduceus_ps_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
 HYDRA_RUN_DIR="./outputs/pretrain/hg38/${WANDB_NAME}"
 
 mkdir -p "${HYDRA_RUN_DIR}"
 srun python -m train \
   experiment=hg38/hg38 \
   callbacks.model_checkpoint_every_n_steps.every_n_train_steps=500 \
-  dataset.max_length=131072 \
-  dataset.batch_size=$((8 / NUM_DEVICES)) \
+  dataset.max_length=${SEQLEN} \
+  dataset.batch_size=$(( BATCH_SIZE / NUM_DEVICES )) \
   dataset.mlm=true \
   dataset.mlm_probability=0.15 \
   dataset.rc_aug="${RC_AUG}" \
-  model="${MODEL_NAME}" \
+  model="caduceus" \
   model.config.d_model=${D_MODEL} \
   model.config.n_layer=${N_LAYER} \
   model.config.bidirectional=true \
@@ -47,10 +51,10 @@ srun python -m train \
   model.config.bidirectional_weight_tie=${BIDIRECTIONAL_WEIGHT_TIE} \
   model.config.rcps=${RCPS} \
   optimizer.lr="${LR}" \
-  train.global_batch_size=8 \
-  trainer.max_steps=50000 \
+  train.global_batch_size=${BATCH_SIZE} \
+  trainer.max_steps=${MAX_STEPS} \
   trainer.devices=${NUM_DEVICES} \
-  +trainer.val_check_interval=10000 \
+  +trainer.val_check_interval=$(( MAX_STEPS / 5 )) \
   wandb.group=pretrain_hg38 \
   wandb.name="${WANDB_NAME}" \
   hydra.run.dir="${HYDRA_RUN_DIR}"
