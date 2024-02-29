@@ -162,7 +162,7 @@ class HG38Dataset(torch.utils.data.Dataset):
         # sample a random row from df
         row_idx, shift_idx = idx // self.shifts, idx % self.shifts
         row = self.df.iloc[row_idx]
-        chr_name, start, end = (row[0], row[1], row[2])
+        chr_name, start, end = (row.iloc[0], row.iloc[1], row.iloc[2])
 
         seq = self.fasta(
             chr_name,
