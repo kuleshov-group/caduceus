@@ -263,15 +263,15 @@ def cross_entropy(logits, y, ignore_index=-100):
     return F.cross_entropy(logits, y, ignore_index=ignore_index)
 
 
-def weighted_cross_entropy(logits, y, loss_weight, ignore_index=-100):
+def weighted_cross_entropy(logits, y, loss_weights, ignore_index=-100):
     """Weighted cross entropy loss (discounts certain tokens, e.g., repeated base pairs in genome)."""
     logits = logits.view(-1, logits.shape[-1])
     y = y.view(-1)
     ce = F.cross_entropy(logits, y, ignore_index=ignore_index, reduction="none")
-    loss_weight = loss_weight.view(-1)
-    loss_weight[y == ignore_index] = 0.0
+    loss_weights = loss_weights.view(-1)
+    loss_weights[y == ignore_index] = 0.0
     # TODO: Follows GPN implementation, but should we remove weight normalization?
-    return (ce * (loss_weight / loss_weight.sum())).sum()
+    return (ce * (loss_weights / loss_weights.sum())).sum()
 
 
 class CaduceusPreTrainedModel(PreTrainedModel):
