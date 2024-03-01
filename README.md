@@ -18,11 +18,15 @@ This repository contains code for reproducing the results in the paper "Caduceus
 We have uploaded a pre-trained Caduceus model to the Huggingface hub.
 The available models are:
 - Caduceus-Ph: [kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16](https://huggingface.co/kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16)
-  - Trained on sequences of length 131k, with a model size of 256 and 16 layers. 
-- TODO: Add PS model
   - Trained on sequences of length 131k, with a model size of 256 and 16 layers.
+  - Trained for 50k steps and batch size of 8.
+  - Trained with reverse-complement (RC) data augmentation.
+- Caduceus-PS: [kuleshov-group/caduceus-ps_seqlen-131k_d_model-256_n_layer-16](https://huggingface.co/kuleshov-group/caduceus-ps_seqlen-131k_d_model-256_n_layer-16)
+  - Trained on sequences of length 131k, with a model size of 256 and 16 layers.
+  - Trained for 50k steps and batch size of 8.
+  - Model is RC equivariant, hence no RC data augmentation is required.
 
-  - You can either use the pre-trained model directly within your trainer scripts or modify the config that initializes the model. 
+You can either use the pre-trained model directly within your trainer scripts or modify the config that initializes the model. 
 
 To use the pre-trained model for masked language modeling, use the following snippet:
 ```python
@@ -45,7 +49,7 @@ config = AutoConfig.from_pretrained(
  "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
  **config_overrides,
 ) 
-model = AutoModelForMaskedLM(config)
+model = AutoModelForMaskedLM.from_config(config)
 ```
 
 ## Getting started in this repository
@@ -224,7 +228,6 @@ python -m train \
 ```
 
 We can also launch as batch jobs (see [`run_nucleotide_transformer.sh`](./slurm_scripts/run_nucleotide_transformer.sh) and [`wrapper_run_nucleotide_transformer.sh`](./slurm_scripts/wrapper_run_nucleotide_transformer.sh) for details).
-TODO: Clean up this script
 
 ### eQTL SNP Variant Effect Prediction
 <a name="vep"></a>
