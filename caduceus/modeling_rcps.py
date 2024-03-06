@@ -101,11 +101,12 @@ class RCPSAddNormWrapper(RCPSWrapper):
     def __init__(self, submodule: nn.Module):
         super().__init__(submodule)
 
-    def forward(self, x, residual=None):
+    def forward(self, x, residual=None, prenorm=False):
         """
         Args:
             x: Input tensor of shape (batch_size, seq_len, channels)
             residual: Residual tensor of shape (batch_size, seq_len, channels) or None.
+            prenorm: Whether to return residual.
         """
         n_channels = x.shape[-1]
         if residual is None:
@@ -123,7 +124,7 @@ class RCPSAddNormWrapper(RCPSWrapper):
             residual = torch.cat([residual_fwd, self.rc(residual_rc)], dim=-1)
             x = torch.cat([x_fwd, self.rc(x_rc)], dim=-1)
 
-        return x, residual
+        return x if not prenorm else (x, residual)
 
 
 class RCPSMambaBlock(nn.Module):
@@ -147,6 +148,11 @@ class RCPSMambaBlock(nn.Module):
         self.mixer = RCPSWrapper(mixer_cls(dim))
         norm_f = norm_cls(dim)
         self.norm = norm_f if fused_add_norm else RCPSAddNormWrapper(norm_f)
+        if self.fused_add_norm:
+            assert RMSNorm is not None, "RMSNorm import fails"
+            assert isinstance(
+                self.norm, (nn.LayerNorm, RMSNorm)
+            ), "Only LayerNorm and RMSNorm are supported for fused_add_norm"
 
     def forward(
         self, hidden_states: Tensor, residual: Optional[Tensor] = None, inference_params=None
@@ -159,7 +165,7 @@ class RCPSMambaBlock(nn.Module):
             inference_params: inference parameters for mixer.
         """
         if not self.fused_add_norm:
-            hidden_states, residual = self.norm(hidden_states, residual=residual)
+            hidden_states, residual = self.norm(hidden_states, residual=residual, prenorm=True)
             if self.residual_in_fp32:
                 residual = residual.to(torch.float32)
         else:
