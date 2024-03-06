@@ -28,6 +28,7 @@ dependencies:
       - omegaconf==2.3.0
       - pandas==2.0.3
       - pyfaidx==0.8.1.1
+      - pysam==0.22.0
       - pytest=8.0.2
       - pytorch-lightning==1.8.6
       - rich==13.7.0
