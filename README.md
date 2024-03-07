@@ -4,14 +4,9 @@
 
 
 # Caduceus &#9764;: Bi-Directional Equivariant Long-Range DNA Sequence Modeling
-[[Blog]](https://caduceus-dna.github.io/) &nbsp; | &nbsp; [[arXiv]](https://github.com/kuleshov-group/caduceus) &nbsp; | &nbsp; [[HuggingFace 🤗]](https://huggingface.co/collections/kuleshov-group/caducues-65dcb89b4f54e416ef61c350)
+[[Blog]](https://caduceus-dna.github.io/) &nbsp; | &nbsp; [[arXiv]](https://arxiv.org/abs/2403.03234) &nbsp; | &nbsp; [[HuggingFace 🤗]](https://huggingface.co/collections/kuleshov-group/caducues-65dcb89b4f54e416ef61c350)
 
-## TODO:
-- [ ] Add arxiv paper link
-- [ ] Add instructions for running on VEP
-- [ ] Add citation
-
-This repository contains code for reproducing the results in the paper "Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling," [Schiff et al. (2024)](TODO:add link).
+This repository contains code for reproducing the results in the paper "Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling," [Schiff et al. (2024)](https://arxiv.org/abs/2403.03234).
 
 ## Using Caduceus with 🤗
 <a name="HF"></a>
@@ -240,7 +235,12 @@ We plan to update the details here soon!
 
 If you find our work useful, please cite our paper using the following:
 ```
-TODO: Add citation
+@article{schiff2024caduceus,
+  title={Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling},
+  author={Schiff, Yair and Kao, Chia-Hsiang and Gokaslan, Aaron and Dao, Tri and Gu, Albert and Kuleshov, Volodymyr},
+  journal={arXiv preprint arXiv:2403.03234},
+  year={2024}
+}
 ```
 
 ## Acknowledgements
