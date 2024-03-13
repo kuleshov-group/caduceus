@@ -62,11 +62,6 @@ Activate the environment.
 conda activate caduceus_env
 ```
 
-Finally, `pip` install `flash-attn` which is imported by the Hyena modules:
-```bash
-pip install flash-attn==2.5.5 --no-build-isolation
-```
-
 Create the following directories to store saved models and slurm logs:
 ```bash
 mkdir outputs
