@@ -543,8 +543,8 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
             )
             hidden_states = torch.stack(
                 [
-                    transformer_outputs[0][..., :self.config.d_model // 2],
-                    torch.flip(transformer_outputs[0][..., self.config.d_model // 2:], dims=[1, 2])
+                    transformer_outputs[0][..., :self.config.d_model],
+                    torch.flip(transformer_outputs[0][..., self.config.d_model:], dims=[1, 2])
                  ],
                 dim=-1
             )
