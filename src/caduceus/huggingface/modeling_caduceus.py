@@ -213,7 +213,8 @@ class CaduceusMixerModel(nn.Module):
 
         if not self.fused_add_norm:
             if self.rcps:
-                hidden_states = self.norm_f(hidden_states, residual=residual)
+                # Set prenorm=False here since we don't need the residual
+                hidden_states = self.norm_f(hidden_states, residual=residual, prenorm=False)
             else:
                 residual = (hidden_states + residual) if residual is not None else hidden_states
                 hidden_states = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
@@ -542,8 +543,8 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
             )
             hidden_states = torch.stack(
                 [
-                    transformer_outputs[0][..., :self.config.d_model // 2],
-                    torch.flip(transformer_outputs[0][..., self.config.d_model // 2:], dims=[1, 2])
+                    transformer_outputs[0][..., :self.config.d_model],
+                    torch.flip(transformer_outputs[0][..., self.config.d_model:], dims=[1, 2])
                  ],
                 dim=-1
             )

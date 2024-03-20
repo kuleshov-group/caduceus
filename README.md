@@ -4,14 +4,9 @@
 
 
 # Caduceus &#9764;: Bi-Directional Equivariant Long-Range DNA Sequence Modeling
-[[Blog]](https://caduceus-dna.github.io/) &nbsp; | &nbsp; [[arXiv]](https://github.com/kuleshov-group/caduceus) &nbsp; | &nbsp; [[HuggingFace 🤗]](https://huggingface.co/collections/kuleshov-group/caducues-65dcb89b4f54e416ef61c350)
+[[Blog]](https://caduceus-dna.github.io/) &nbsp; | &nbsp; [[arXiv]](https://arxiv.org/abs/2403.03234) &nbsp; | &nbsp; [[HuggingFace 🤗]](https://huggingface.co/collections/kuleshov-group/caducues-65dcb89b4f54e416ef61c350)
 
-## TODO:
-- [ ] Add arxiv paper link
-- [ ] Add instructions for running on VEP
-- [ ] Add citation
-
-This repository contains code for reproducing the results in the paper "Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling," [Schiff et al. (2024)](TODO:add link).
+This repository contains code for reproducing the results in the paper "Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling," [Schiff et al. (2024)](https://arxiv.org/abs/2403.03234).
 
 ## Using Caduceus with 🤗
 <a name="HF"></a>
@@ -26,7 +21,7 @@ The available models are:
   - Trained for 50k steps and batch size of 8.
   - Model is RC equivariant, hence no RC data augmentation is required.
 
-You can either use the pre-trained model directly within your trainer scripts or modify the config that initializes the model. 
+You can either use the pre-trained model directly within your trainer scripts or modify the config that initializes the model.
 
 To use the pre-trained model for masked language modeling, use the following snippet:
 ```python
@@ -48,7 +43,7 @@ config_overrides = {}
 config = AutoConfig.from_pretrained(
  "kuleshov-group/caduceus-ph_seqlen-131k_d_model-256_n_layer-16",
  **config_overrides,
-) 
+)
 model = AutoModelForMaskedLM.from_config(config)
 ```
 
@@ -65,11 +60,6 @@ Activate the environment.
 
 ```bash
 conda activate caduceus_env
-```
-
-Finally, `pip` install `flash-attn` which is imported by the Hyena modules:
-```bash
-pip install flash-attn==2.5.5 --no-build-isolation
 ```
 
 Create the following directories to store saved models and slurm logs:
@@ -110,7 +100,7 @@ gunzip data/hg38/hg38.ml.fa.gz  # unzip the fasta file
 curl https://storage.googleapis.com/basenji_barnyard2/sequences_human.bed > data/hg38/human-sequences.bed
 ```
 
-Launch pretraining run using the command line  
+Launch pretraining run using the command line
 
 ```bash
 python -m train \
@@ -152,7 +142,7 @@ sbatch run_pretrain_caduceus.sh
 ### GenomicBenchmarks
 <a name="genomicbenchmarks"></a>
 
-The [GenomicBenchmarks](https://github.com/ML-Bioinfo-CEITEC/genomic_benchmarks) presented in [Grešová et al. (2023)](https://bmcgenomdata.biomedcentral.com/articles/10.1186/s12863-023-01123-8) is comprised of 8 classification tasks. 
+The [GenomicBenchmarks](https://github.com/ML-Bioinfo-CEITEC/genomic_benchmarks) presented in [Grešová et al. (2023)](https://bmcgenomdata.biomedcentral.com/articles/10.1186/s12863-023-01123-8) is comprised of 8 classification tasks.
 
 We can launch a downstream fine-tuning run on one of the tasks using the sample command below:
 ```bash
@@ -181,7 +171,7 @@ python -m train \
 This sample run will fine-tune a pre-trained Caduceus-PS model on the `dummy_mouse_enhancers_ensembl` task.
 Note some of the additional arguments present here, relative to the pre-training command from [above](#pretraining):
 - `model.config_path` contains the path model config that was saved during pre-training.
-This will be saved to the run directory of the pre-training experiment. 
+This will be saved to the run directory of the pre-training experiment.
 - `train.pretrained_model_path` contains the path to the pre-trained model checkpoint.
 - `dataset.conjoin_train` determines whether the dataset will return a single sequence (`dataset.conjoin_train=false`) or the concatenation of a sequence and its reverse complement along `dim=-1`, during downstream fine-tuning training.
 - `dataset.conjoin_test` is the same as above, but for inference (e.g., validation / test).
@@ -238,9 +228,14 @@ We plan to update the details here soon!
 ## Citation
 <a name="citation"></a>
 
-If you find our work useful, please cite our paper using the following:  
+If you find our work useful, please cite our paper using the following:
 ```
-TODO: Add citation
+@article{schiff2024caduceus,
+  title={Caduceus: Bi-Directional Equivariant Long-Range DNA Sequence Modeling},
+  author={Schiff, Yair and Kao, Chia-Hsiang and Gokaslan, Aaron and Dao, Tri and Gu, Albert and Kuleshov, Volodymyr},
+  journal={arXiv preprint arXiv:2403.03234},
+  year={2024}
+}
 ```
 
 ## Acknowledgements
@@ -248,8 +243,6 @@ TODO: Add citation
 This repository is adapted from the [HyenaDNA repo](https://github.com/HazyResearch/hyena-dna) and leverages much of the training, data loading, and logging infrascture defined there.
 HyenaDNA was originally derived from the [S4](https://github.com/state-spaces/s4) and [Safari](https://github.com/HazyResearch/safari) repositories.
 
-
-
-We would like to thank the Evan Trop and the [InstaDeep](https://www.instadeep.com/) team for useful discussions about the [Nucleotide Transformer leaderboard](https://huggingface.co/spaces/InstaDeepAI/nucleotide_transformer_benchmark).
+We would like to thank Evan Trop and the [InstaDeep](https://www.instadeep.com/) team for useful discussions about the [Nucleotide Transformer leaderboard](https://huggingface.co/spaces/InstaDeepAI/nucleotide_transformer_benchmark).
 
 Finally, we would like to thank [MosaicML](https://www.mosaicml.com/) for providing compute resources for some of the pre-training experiments.
