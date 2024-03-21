@@ -4,12 +4,12 @@ from typing import List
 import torch.nn as nn
 from einops import rearrange
 
-import src.models.nn.utils as U
-import src.tasks.metrics as M
-import torchmetrics as tm
-from src.models.nn.adaptive_softmax import AdaptiveEmbedding, ProjectedAdaptiveLogSoftmax
-from src.tasks.torchmetrics import torchmetric_fns as tm_mine
-from src.utils.config import to_list, instantiate
+import caduceus.models.nn.utils as U
+import caduceus.tasks.metrics as M
+from caduceus.tasks import torchmetrics as tm
+from caduceus.models.nn.adaptive_softmax import AdaptiveEmbedding, ProjectedAdaptiveLogSoftmax
+from caduceus.tasks.torchmetrics import torchmetric_fns as tm_mine
+from caduceus.utils.config import to_list, instantiate
 from torchmetrics import MetricCollection
 
 

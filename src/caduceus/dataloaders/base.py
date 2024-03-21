@@ -11,7 +11,7 @@ import torch
 
 # Default data path is environment variable or <repo_root_dir>/data
 if (default_data_path := os.getenv("DATA_PATH")) is None:
-    default_data_path = Path(__file__).parent.parent.parent.absolute()
+    default_data_path = Path(__file__).parent.parent.parent.parent.absolute()
     default_data_path = default_data_path / "data"
 else:
     default_data_path = Path(default_data_path).absolute()

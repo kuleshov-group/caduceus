@@ -18,10 +18,10 @@ except ImportError:
     ColumnParallelLinear = None
 
 
-from caduceus.configuration_caduceus import CaduceusConfig
-from caduceus.modeling_caduceus import Caduceus
-from src.models.sequence.long_conv_lm import LMBackbone
-from src.models.sequence.long_conv_lm import _init_weights
+from caduceus.huggingface.configuration_caduceus import CaduceusConfig
+from caduceus.huggingface.modeling_caduceus import Caduceus
+from caduceus.models.sequence.long_conv_lm import LMBackbone
+from caduceus.models.sequence.long_conv_lm import _init_weights
 
 
 class DNAEmbeddingModel(nn.Module, GenerationMixin):

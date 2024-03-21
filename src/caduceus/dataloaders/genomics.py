@@ -13,17 +13,17 @@ import torch
 from datasets import Dataset
 from torch.utils.data.dataloader import DataLoader
 
-from caduceus.tokenization_caduceus import CaduceusTokenizer
-import src.utils.train
-from src.dataloaders.base import SequenceDataset, default_data_path
-from src.dataloaders.datasets.genomic_bench_dataset import GenomicBenchmarkDataset
-from src.dataloaders.datasets.hg38_char_tokenizer import CharacterTokenizer
-from src.dataloaders.datasets.hg38_dataset import HG38Dataset
-from src.dataloaders.datasets.nucleotide_transformer_dataset import NucleotideTransformerDataset
-from src.dataloaders.fault_tolerant_sampler import FaultTolerantDistributedSampler
-from src.dataloaders.fault_tolerant_sampler import RandomFaultTolerantSampler
+from caduceus.huggingface.tokenization_caduceus import CaduceusTokenizer
+import caduceus.utils.train
+from caduceus.dataloaders.base import SequenceDataset, default_data_path
+from caduceus.dataloaders.datasets.genomic_bench_dataset import GenomicBenchmarkDataset
+from caduceus.dataloaders.datasets.hg38_char_tokenizer import CharacterTokenizer
+from caduceus.dataloaders.datasets.hg38_dataset import HG38Dataset
+from caduceus.dataloaders.datasets.nucleotide_transformer_dataset import NucleotideTransformerDataset
+from caduceus.dataloaders.fault_tolerant_sampler import FaultTolerantDistributedSampler
+from caduceus.dataloaders.fault_tolerant_sampler import RandomFaultTolerantSampler
 
-logger = src.utils.train.get_logger(__name__)
+logger = caduceus.utils.train.get_logger(__name__)
 
 
 class HG38(SequenceDataset):

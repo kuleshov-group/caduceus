@@ -123,3 +123,5 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/python
+
+src/caduceus/_version.py

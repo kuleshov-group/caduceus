@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=48", "setuptools_scm[toml]>=6.3.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/caduceus/_version.py"
+version_scheme = "post-release"
+fallback_version = "0.0.0"
+
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+known_first_party = ["caduceus"]
+line_length = 88
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+source = ["src/caduceus"]
+
+[tool.coverage.paths]
+source = ["src/caduceus", "*/site-packages"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "if typing.TYPE_CHECKING:",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "raise AssertionError",
+    "@overload",
+]
+
+[tool.mypy]
+# Error output
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+show_traceback = true
+pretty = true
+check_untyped_defs = false
+# Warnings
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+files = ["src/caduceus", "tests"]
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pylint.message_control]
+enable = ["c-extension-no-member", "no-else-return"]
+
+[tool.pylint.variables]
+dummy-variables-rgx = "_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_"
+ignored-argument-names = "_.*|^ignored_|^unused_|args|kwargs"
+
+[tool.codespell]
+ignore-words-list = " "
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]

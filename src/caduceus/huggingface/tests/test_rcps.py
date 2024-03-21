@@ -12,11 +12,11 @@ try:
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
-from caduceus.modeling_rcps import (
+from caduceus.huggingface.modeling_rcps import (
     RCPSEmbedding, RCPSAddNormWrapper, RCPSLMHead, RCPSWrapper
 )
 
-from caduceus.modeling_caduceus import CaduceusConfig, CaduceusMixerModel, CaduceusForMaskedLM, create_block
+from caduceus.huggingface.modeling_caduceus import CaduceusConfig, CaduceusMixerModel, CaduceusForMaskedLM, create_block
 
 
 @pytest.mark.parametrize("batch_size", [4])

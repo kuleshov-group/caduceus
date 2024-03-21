@@ -26,8 +26,8 @@ try:
 except ImportError:
     dropout_add_layer_norm = None
 
-from src.utils import instantiate
-import src.utils.registry as registry
+from caduceus.utils import instantiate
+import caduceus.utils.registry as registry
 
 
 class CheckpointedModule(torch.nn.Module):

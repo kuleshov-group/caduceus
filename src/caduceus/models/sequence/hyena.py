@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from einops import rearrange
 
 try:
-    from src.ops.fftconv import fftconv_ref, fftconv_func, fftconv_heads_ref
+    from caduceus.ops.fftconv import fftconv_ref, fftconv_func, fftconv_heads_ref
 
 except ImportError:
     fftconv_func = None
@@ -16,10 +16,10 @@ try:
 except ImportError:
     FusedDense = None
 
-import src.utils.registry as registry
-from src.utils.train import OptimModule
-from src.utils.config import instantiate, auto_assign_attrs
-from src.models.nn import Activation
+import caduceus.utils.registry as registry
+from caduceus.utils.train import OptimModule
+from caduceus.utils.config import instantiate, auto_assign_attrs
+from caduceus.models.nn import Activation
 
 
 class FFTConvFuncv2(torch.autograd.Function):
