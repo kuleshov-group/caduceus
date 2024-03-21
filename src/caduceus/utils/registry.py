@@ -26,7 +26,7 @@ model = {
     # Pre-training LM head models
     "hyena_lm": "caduceus.models.sequence.long_conv_lm.ConvLMHeadModel",
     "mamba_lm": "mamba_ssm.models.mixer_seq_simple.MambaLMHeadModel",
-    "caduceus_lm": "caduceus.modeling_caduceus.CaduceusForMaskedLM",
+    "caduceus_lm": "caduceus.huggingface.modeling_caduceus.CaduceusForMaskedLM",
 
     # Downstream task embedding backbones
     "dna_embedding": "caduceus.models.sequence.dna_embedding.DNAEmbeddingModel",

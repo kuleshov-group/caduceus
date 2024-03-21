@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from caduceus.tasks import torchmetrics as tm_f
 from sklearn.metrics import f1_score, roc_auc_score, matthews_corrcoef
-from caduceus.tasks.torchmetrics import MulticlassRecall, MulticlassPrecision
+from torchmetrics.classification import MulticlassRecall, MulticlassPrecision
 
 from caduceus.tasks.torchmetrics import Metric
 

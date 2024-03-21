@@ -21,6 +21,7 @@ from pytorch_lightning.utilities import rank_zero_only, rank_zero_warn
 # from caduceus import caduceus as U, caduceus
 import caduceus
 from caduceus import utils
+from caduceus.models.nn.utils import PassthroughSequential
 from caduceus.dataloaders import SequenceDataset  # TODO make registry
 from caduceus.tasks import encoders, decoders, tasks
 from caduceus.utils import registry
@@ -226,8 +227,8 @@ class SequenceLightningModule(pl.LightningModule):
         )
 
         # Extract the modules, so they show up in the top level parameter count
-        self.encoder = utils.PassthroughSequential(self.task.encoder, encoder)
-        self.decoder = utils.PassthroughSequential(decoder, self.task.decoder)
+        self.encoder = PassthroughSequential(self.task.encoder, encoder)
+        self.decoder = PassthroughSequential(decoder, self.task.decoder)
         self.loss = self.task.loss
         self.loss_val = self.task.loss
         if hasattr(self.task, 'loss_val'):

@@ -10,7 +10,7 @@ from caduceus.tasks import torchmetrics as tm
 from caduceus.models.nn.adaptive_softmax import AdaptiveEmbedding, ProjectedAdaptiveLogSoftmax
 from caduceus.tasks.torchmetrics import torchmetric_fns as tm_mine
 from caduceus.utils.config import to_list, instantiate
-from caduceus.tasks.torchmetrics import MetricCollection
+from torchmetrics import MetricCollection
 
 
 class BaseTask:

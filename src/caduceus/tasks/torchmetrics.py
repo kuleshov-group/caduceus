@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import torch
 from torch import Tensor
 
-from caduceus.tasks.torchmetrics import Metric
+from torchmetrics import Metric
 
 try:
     from flash_attn.losses.cross_entropy import CrossEntropyLoss
