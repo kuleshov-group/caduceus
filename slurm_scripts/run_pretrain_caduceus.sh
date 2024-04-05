@@ -4,7 +4,7 @@
 #SBATCH --mem=100G                          # RAM
 #SBATCH --gres=gpu:8                        # Number of GPUs
 #SBATCH --ntasks-per-node=8                 # Should correspond to num devices (at least 1-1 task to GPU)
-##SBATCH --cpus-per-task=4                   # Number of CPU cores per task
+##SBATCH --cpus-per-task=4                  # Number of CPU cores per task
 #SBATCH -N 1                                # Number of nodes
 #SBATCH --requeue                           # Requeue job if it fails
 #SBATCH --job-name=caduceus_ps              # Job name
@@ -31,7 +31,7 @@ RC_AUG="false"
 
 BATCH_SIZE=$(( 1048576 / SEQLEN ))
 SEQLEN_DIS="$(echo "scale=0; ${SEQLEN} / 1000" | bc)k"
-WANDB_NAME="caduceus_ps_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
+WANDB_NAME="caduceus-ps_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
 HYDRA_RUN_DIR="./outputs/pretrain/hg38/${WANDB_NAME}"
 
 mkdir -p "${HYDRA_RUN_DIR}"
