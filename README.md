@@ -221,9 +221,36 @@ We can also launch as batch jobs (see [`run_nucleotide_transformer.sh`](./slurm_
 
 ### eQTL SNP Variant Effect Prediction
 <a name="vep"></a>
-TODO: This section is a work in progress and is pending the open source release of the dataset used in the corresponding experiment.
-We plan to update the details here soon!
+This task comes from the recently proposed Long Range Benchmark (LRB) in [Kao et al., 2023](https://llms4science-community.github.io/papers/LLMs4Bio24_paper_12.pdf).
+The data is available on HuggingFace: [InstaDeepAI/genomics-long-range-benchmark](https://huggingface.co/datasets/InstaDeepAI/genomics-long-range-benchmark).
+For this task we fit a model to the pre-trained and frozen embeddings of the DNA language models.
+Therefore, to perform the evaluation, we proceed in 2 steps:
+- **Step 1: Extract the embeddings** from the pre-trained model:
+Run the [`vep_embeddings.py`](./vep_embeddings.py) script to extract the embeddings from the pre-trained model.
+See the example below:
+```bash
+torchrun \
+    --standalone \
+    --nnodes=1 \
+    --nproc-per-node=8 \
+    vep_embeddings.py \
+      --num_workers=2 \
+      --seq_len=131072  \
+      --bp_per_token=1  \
+      --embed_dump_batch_size=1 \
+      --name="caduceus-ps_downstream-seqlen=131k"  \
+      --model_name_or_path="kuleshov-group/caduceus-ps_seqlen-131k_d_model-256_n_layer-16" \
+      --rcps
+```
 
+The `--rcps` flag is used to indicate that the model is reverse-complement equivariant.
+When using other models, set this flag to false with `--no-rcps`.
+To speed this step up, this script utilizes torch distributed data parallelism.
+
+Please refer to the slurm script provided in [`slurm_scripts/dump_vep_embeddings.sh`](./slurm_scripts/dump_vep_embeddings.sh)
+to launch this step as a batch job.
+
+- **Step 2: Fit an SVM model to the embeddings** using this notebook: [`vep_svm.ipynb`](./vep_svm.ipynb).
 
 ## Citation
 <a name="citation"></a>
@@ -243,6 +270,7 @@ If you find our work useful, please cite our paper using the following:
 This repository is adapted from the [HyenaDNA repo](https://github.com/HazyResearch/hyena-dna) and leverages much of the training, data loading, and logging infrastructure defined there.
 HyenaDNA was originally derived from the [S4](https://github.com/state-spaces/s4) and [Safari](https://github.com/HazyResearch/safari) repositories.
 
-We would like to thank Evan Trop and the [InstaDeep](https://www.instadeep.com/) team for useful discussions about the [Nucleotide Transformer leaderboard](https://huggingface.co/spaces/InstaDeepAI/nucleotide_transformer_benchmark).
+We would like to thank Evan Trop and the [InstaDeep](https://www.instadeep.com/) team for useful discussions about the [Nucleotide Transformer leaderboard](https://huggingface.co/spaces/InstaDeepAI/nucleotide_transformer_benchmark)
+and the Long Range Benchmark task.
 
 Finally, we would like to thank [MosaicML](https://www.mosaicml.com/) for providing compute resources for some of the pre-training experiments.
