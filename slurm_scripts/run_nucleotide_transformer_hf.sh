@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --get-user-env                   # Retrieve the users login environment
 #SBATCH -t 96:00:00                      # Time limit (hh:mm:ss)
-#SBATCH --mem=64000M                     # RAM
-#SBATCH --gres=gpu:1                     # Number of GPUs
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=2
+#SBATCH --mem=64G                        # RAM
+#SBATCH --gres=gpu:2                     # Number of GPUs
+#SBATCH --ntasks-per-node=2
+#SBATCH --cpus-per-task=4
 #SBATCH -N 1                             # Number of nodes
 #SBATCH --requeue                        # Requeue job if it fails
 #SBATCH --open-mode=append               # Do not overwrite logs
@@ -12,6 +12,7 @@
 # Setup environment
 cd ../ || exit  # Go to the root directory of the repo
 source setup_env.sh
+export HYDRA_FULL_ERROR=1
 
 # Expected args:
 # - PRETRAINED_PATH
@@ -25,25 +26,20 @@ source setup_env.sh
 # - BATCH_SIZE
 # - RC_AUG
 
-
 # Run script
-# shellcheck disable=SC2154
-WANDB_NAME="${DISPLAY_NAME}_lr-${LR}_batch_size-${BATCH_SIZE}_rc_aug-${RC_AUG}"
-for seed in $(seq 1 5); do
-  # shellcheck disable=SC2154
-  HYDRA_RUN_DIR="./outputs/downstream/gb_cv5/${TASK}/${WANDB_NAME}/seed-${seed}"
+WANDB_NAME="${DISPLAY_NAME}_LR-${LR}_BATCH_SIZE-${BATCH_SIZE}_RC_AUG-${RC_AUG}"
+for seed in $(seq 1 10); do
+  HYDRA_RUN_DIR="./outputs/downstream/nt_cv10_ep20/${TASK}/${DISPLAY_NAME}_LR-${LR}_BATCH_SIZE-${BATCH_SIZE}_RC_AUG-${RC_AUG}/seed-${seed}"
   mkdir -p "${HYDRA_RUN_DIR}"
   echo "*****************************************************"
-  echo "Running GenomicsBenchmark model: ${DISPLAY_NAME}, task: ${TASK}, lr: ${LR}, batch_size: ${BATCH_SIZE}, rc_aug: ${RC_AUG}, SEED: ${seed}"
-  # shellcheck disable=SC2086
+  echo "Running NT model: ${DISPLAY_NAME}, TASK: ${TASK}, LR: ${LR}, BATCH_SIZE: ${BATCH_SIZE}, RC_AUG: ${RC_AUG}, SEED: ${seed}"
   python -m train \
-    experiment=hg38/genomic_benchmark \
+    experiment=hg38/nucleotide_transformer \
     callbacks.model_checkpoint_every_n_steps.every_n_train_steps=5000 \
     dataset.dataset_name="${TASK}" \
     dataset.train_val_split_seed=${seed} \
     dataset.batch_size=${BATCH_SIZE} \
     dataset.rc_aug="${RC_AUG}" \
-    +dataset.conjoin_train=false \
     +dataset.conjoin_test="${CONJOIN_TEST}" \
     model="${MODEL}" \
     model._name_="${MODEL_NAME}" \
@@ -53,11 +49,11 @@ for seed in $(seq 1 5); do
     +decoder.conjoin_train="${CONJOIN_TRAIN_DECODER}" \
     +decoder.conjoin_test="${CONJOIN_TEST}" \
     optimizer.lr="${LR}" \
-    trainer.max_epochs=10 \
-    wandb.group="downstream/gb_cv5" \
+    trainer.max_epochs=20 \
+    wandb.group="downstream/nt_cv10_ep20" \
     wandb.job_type="${TASK}" \
     wandb.name="${WANDB_NAME}" \
-    wandb.id="gb_cv5_${TASK}_${WANDB_NAME}_seed-${seed}" \
+    wandb.id="nt_cv10_ep-20_${TASK}_${WANDB_NAME}_seed-${seed}" \
     +wandb.tags=\["seed-${seed}"\] \
     hydra.run.dir="${HYDRA_RUN_DIR}"
   echo "*****************************************************"
