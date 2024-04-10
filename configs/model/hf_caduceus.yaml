@@ -1,0 +1,4 @@
+# Caduceus downloaded form HF
+_name_: hf_caduceus
+pretrained_model_name_or_path: null
+trust_remote_code: true

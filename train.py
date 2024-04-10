@@ -191,7 +191,7 @@ class SequenceLightningModule(pl.LightningModule):
                 if self.hparams.model.get("fused_dropout_add_ln", None) is not None:
                     self.hparams.model.update({"fused_dropout_add_ln": False})
         # TODO: Hacky way to get complement_map for Caduceus models; need to find a more elegant implementation
-        if "caduceus" in self.hparams.model.get("_name_"):
+        if "caduceus" in self.hparams.model.get("_name_") and "hf" not in self.hparams.model.get("_name_"):
             OmegaConf.update(
                 self.hparams.model.config, "complement_map", self.dataset.tokenizer.complement_map, force_add=True
             )

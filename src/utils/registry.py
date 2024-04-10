@@ -32,6 +32,7 @@ model = {
     "dna_embedding": "src.models.sequence.dna_embedding.DNAEmbeddingModel",
     "dna_embedding_mamba": "src.models.sequence.dna_embedding.DNAEmbeddingModelMamba",
     "dna_embedding_caduceus": "src.models.sequence.dna_embedding.DNAEmbeddingModelCaduceus",
+    "dna_embedding_hf_caduceus": "src.models.sequence.dna_embedding.DNAEmbeddingModelHFCaduceus",
 
     # Baseline for genomics benchmark
     "genomics_benchmark_cnn": "src.models.baseline.genomics_benchmark_cnn.GenomicsBenchmarkCNN",

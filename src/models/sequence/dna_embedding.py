@@ -11,6 +11,7 @@ from flash_attn.utils.generation import GenerationMixin
 from mamba_ssm.models.config_mamba import MambaConfig
 from mamba_ssm.models.mixer_seq_simple import MixerModel
 from mamba_ssm.models.mixer_seq_simple import _init_weights as _init_weights_mamba
+from transformers import AutoModel
 
 try:
     from flash_attn.ops.fused_dense import ColumnParallelLinear
@@ -194,6 +195,49 @@ class DNAEmbeddingModelCaduceus(DNAEmbeddingModel):
 
         return self.caduceus(input_ids, return_dict=False), None
 
+
+class DNAEmbeddingModelHFCaduceus(DNAEmbeddingModel):
+    """Custom DNA Embedding Model that is compatible with HF Caduceus models."""
+
+    def __init__(
+            self,
+            pretrained_model_name_or_path: str,
+            trust_remote_code: bool = False,
+            device=None,
+            dtype=None,
+            conjoin_train=False,
+            conjoin_test=False,
+    ):
+        super(DNAEmbeddingModel, self).__init__()  # nn.Module.__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
+        self.caduceus = AutoModel.from_pretrained(
+            pretrained_model_name_or_path,
+            trust_remote_code=trust_remote_code,
+            **factory_kwargs,
+        )
+        self.config = self.caduceus.config
+        self.d_model = self.caduceus.config.d_model  # for decoder
+
+        self.conjoin_train = conjoin_train
+        self.conjoin_test = conjoin_test
+
+    def forward(self, input_ids, position_ids=None, inference_params=None, state=None):  # state for the repo interface
+        """Caduceus backbone-specific forward pass that does not use `position_ids`."""
+        if self.config.rcps:  # Hidden states have 2 * d_model channels for RCPS
+            hidden_states = self.caduceus(input_ids, return_dict=False)
+            num_chan = hidden_states.shape[-1]
+            return torch.stack(
+                [hidden_states[..., :num_chan // 2], torch.flip(hidden_states[..., num_chan // 2:], dims=[1, 2])],
+                dim=-1
+            ), None
+        if self.conjoin_train or (self.conjoin_test and not self.training):  # For conjoining / post-hoc conjoining
+            assert input_ids.ndim == 3, "Input must be 3D tensor, where channels corresponds to forward and rc strands"
+            hidden_states = self.caduceus(input_ids[..., 0], return_dict=False)
+            hidden_states_rc = self.caduceus(input_ids[..., 1], return_dict=False)
+            # Stack along channel dimension (dim=-1)
+            return torch.stack([hidden_states, hidden_states_rc], dim=-1), None
+
+        return self.caduceus(input_ids, return_dict=False), None
 
 def load_backbone(model, state_dict, freeze_backbone=False, ignore_head=True):
     """
