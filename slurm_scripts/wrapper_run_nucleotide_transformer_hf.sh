@@ -22,7 +22,7 @@ for TASK in "enhancers" "enhancers_types" "H3" "H3K4me1" "H3K4me2" "H3K4me3" "H3
           --job-name="${job_name}" \
           --output="${LOG_DIR}/%x_%j.log" \
           --export="${export_str}" \
-          "run_nucleotide_transformer.sh"
+          "run_nucleotide_transformer_hf.sh"
       done
     done
   done
