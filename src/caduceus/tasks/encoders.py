@@ -1,7 +1,7 @@
 from torch import nn
 
-import src.models.nn.utils as U
-import src.utils as utils
+import caduceus.models.nn.utils as U
+import caduceus.utils as utils
 
 
 class Encoder(nn.Module):

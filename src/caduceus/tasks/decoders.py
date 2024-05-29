@@ -6,11 +6,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import src.models.nn.utils as U
-import src.utils as utils
-import src.utils.train
+import caduceus.models.nn.utils as U
+import caduceus.utils as utils
+import caduceus.utils.train
 
-log = src.utils.train.get_logger(__name__)
+log = caduceus.utils.train.get_logger(__name__)
 
 
 class Decoder(nn.Module):

@@ -9,8 +9,8 @@ import pandas as pd
 import torch
 from pyfaidx import Fasta
 
-from src.dataloaders.utils.mlm import mlm_getitem
-from src.dataloaders.utils.rc import coin_flip, string_reverse_complement
+from caduceus.dataloaders.utils.mlm import mlm_getitem
+from caduceus.dataloaders.utils.rc import coin_flip, string_reverse_complement
 
 MAX_ALLOWED_LENGTH = 2 ** 20
 

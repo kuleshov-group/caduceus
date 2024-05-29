@@ -18,15 +18,16 @@ from omegaconf import OmegaConf
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only, rank_zero_warn
 
-import src.models.nn.utils as U
-import src.utils as utils
-import src.utils.train
-from src.dataloaders import SequenceDataset  # TODO make registry
-from src.tasks import decoders, encoders, tasks
-from src.utils import registry
-from src.utils.optim_groups import add_optimizer_hooks
+# from caduceus import caduceus as U, caduceus
+import caduceus
+from caduceus import utils
+from caduceus.models.nn.utils import PassthroughSequential
+from caduceus.dataloaders import SequenceDataset  # TODO make registry
+from caduceus.tasks import encoders, decoders, tasks
+from caduceus.utils import registry
+from caduceus.utils.optim_groups import add_optimizer_hooks
 
-log = src.utils.train.get_logger(__name__)
+log = caduceus.utils.train.get_logger(__name__)
 
 # Turn on TensorFloat32 (speeds up large model training substantially)
 import torch.backends
@@ -226,8 +227,8 @@ class SequenceLightningModule(pl.LightningModule):
         )
 
         # Extract the modules, so they show up in the top level parameter count
-        self.encoder = U.PassthroughSequential(self.task.encoder, encoder)
-        self.decoder = U.PassthroughSequential(decoder, self.task.decoder)
+        self.encoder = PassthroughSequential(self.task.encoder, encoder)
+        self.decoder = PassthroughSequential(decoder, self.task.decoder)
         self.loss = self.task.loss
         self.loss_val = self.task.loss
         if hasattr(self.task, 'loss_val'):
@@ -523,7 +524,7 @@ class SequenceLightningModule(pl.LightningModule):
 
         # Print optimizer info for debugging
         keys = set([k for hp in hps for k in hp.keys()])  # Special hparams
-        utils.train.log_optimizer(log, optimizer, keys)
+        caduceus.utils.train.log_optimizer(log, optimizer, keys)
         # Configure scheduler
         if "scheduler" not in self.hparams:
             return optimizer
@@ -703,14 +704,14 @@ def main(config: OmegaConf):
     # - register evaluation resolver
     # - filter out keys used only for interpolation
     # - optional hooks, including disabling python warnings or debug friendly configuration
-    config = utils.train.process_config(config)
+    config = caduceus.utils.train.process_config(config)
     # if config.train.get("compile_model", False):
     #     # See: https://github.com/arogozhnikov/einops/wiki/Using-torch.compile-with-einops
     #     from einops._torch_specific import allow_ops_in_compiled_graph  # requires einops>=0.6.1
     #     allow_ops_in_compiled_graph()
 
     # Pretty print config using Rich library
-    utils.train.print_config(config, resolve=True)
+    caduceus.utils.train.print_config(config, resolve=True)
 
     train(config)
 

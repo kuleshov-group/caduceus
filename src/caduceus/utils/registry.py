@@ -7,7 +7,7 @@ optimizer = {
     "adamw": "torch.optim.AdamW",
     "rmsprop": "torch.optim.RMSprop",
     "sgd": "torch.optim.SGD",
-    "lamb": "src.utils.optim.lamb.JITLamb",
+    "lamb": "caduceus.utils.optim.lamb.JITLamb",
 }
 
 scheduler = {
@@ -19,29 +19,29 @@ scheduler = {
     "constant_warmup": "transformers.get_constant_schedule_with_warmup",
     "linear_warmup": "transformers.get_linear_schedule_with_warmup",
     "cosine_warmup": "transformers.get_cosine_schedule_with_warmup",
-    "cosine_warmup_timm": "src.utils.optim.schedulers.TimmCosineLRScheduler",
+    "cosine_warmup_timm": "caduceus.utils.optim.schedulers.TimmCosineLRScheduler",
 }
 
 model = {
     # Pre-training LM head models
-    "hyena_lm": "src.models.sequence.long_conv_lm.ConvLMHeadModel",
+    "hyena_lm": "caduceus.models.sequence.long_conv_lm.ConvLMHeadModel",
     "mamba_lm": "mamba_ssm.models.mixer_seq_simple.MambaLMHeadModel",
-    "caduceus_lm": "caduceus.modeling_caduceus.CaduceusForMaskedLM",
+    "caduceus_lm": "caduceus.huggingface.modeling_caduceus.CaduceusForMaskedLM",
 
     # Downstream task embedding backbones
-    "dna_embedding": "src.models.sequence.dna_embedding.DNAEmbeddingModel",
-    "dna_embedding_mamba": "src.models.sequence.dna_embedding.DNAEmbeddingModelMamba",
-    "dna_embedding_caduceus": "src.models.sequence.dna_embedding.DNAEmbeddingModelCaduceus",
+    "dna_embedding": "caduceus.models.sequence.dna_embedding.DNAEmbeddingModel",
+    "dna_embedding_mamba": "caduceus.models.sequence.dna_embedding.DNAEmbeddingModelMamba",
+    "dna_embedding_caduceus": "caduceus.models.sequence.dna_embedding.DNAEmbeddingModelCaduceus",
 
     # Baseline for genomics benchmark
-    "genomics_benchmark_cnn": "src.models.baseline.genomics_benchmark_cnn.GenomicsBenchmarkCNN",
+    "genomics_benchmark_cnn": "caduceus.models.baseline.genomics_benchmark_cnn.GenomicsBenchmarkCNN",
 }
 
 layer = {
-    "id": "src.models.sequence.base.SequenceIdentity",
-    "ff": "src.models.sequence.ff.FF",
-    "hyena": "src.models.sequence.hyena.HyenaOperator",
-    "hyena-filter": "src.models.sequence.hyena.HyenaFilter",
+    "id": "caduceus.models.sequence.base.SequenceIdentity",
+    "ff": "caduceus.models.sequence.ff.FF",
+    "hyena": "caduceus.models.sequence.hyena.HyenaOperator",
+    "hyena-filter": "caduceus.models.sequence.hyena.HyenaFilter",
 }
 
 callbacks = {
@@ -53,11 +53,11 @@ callbacks = {
     "swa": "pytorch_lightning.callbacks.StochasticWeightAveraging",
     "rich_model_summary": "pytorch_lightning.callbacks.RichModelSummary",
     "rich_progress_bar": "pytorch_lightning.callbacks.RichProgressBar",
-    "params": "src.callbacks.params.ParamsLog",
-    "timer": "src.callbacks.timer.Timer",
-    "val_every_n_global_steps": "src.callbacks.validation.ValEveryNGlobalSteps",
+    "params": "caduceus.callbacks.params.ParamsLog",
+    "timer": "caduceus.callbacks.timer.Timer",
+    "val_every_n_global_steps": "caduceus.callbacks.validation.ValEveryNGlobalSteps",
 }
 
 model_state_hook = {
-    'load_backbone': 'src.models.sequence.dna_embedding.load_backbone',
+    'load_backbone': 'caduceus.models.sequence.dna_embedding.load_backbone',
 }

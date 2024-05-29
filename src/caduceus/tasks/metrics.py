@@ -3,11 +3,11 @@ from functools import partial
 
 import torch
 import torch.nn.functional as F
-import torchmetrics.functional as tm_f
+from caduceus.tasks import torchmetrics as tm_f
 from sklearn.metrics import f1_score, roc_auc_score, matthews_corrcoef
 from torchmetrics.classification import MulticlassRecall, MulticlassPrecision
 
-from torchmetrics import Metric
+from caduceus.tasks.torchmetrics import Metric
 
 
 class CorrectAggregatedMetric(Metric):

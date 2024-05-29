@@ -1,7 +1,7 @@
 # Use open-source version of Mamba
 _name_: caduceus_lm
 config:
-  _target_: caduceus.configuration_caduceus.CaduceusConfig
+  _target_: caduceus.huggingface.configuration_caduceus.CaduceusConfig
   # From original MambaConfig
   d_model: 128
   n_layer: 2
