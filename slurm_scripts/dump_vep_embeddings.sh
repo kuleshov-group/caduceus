@@ -40,11 +40,11 @@ export CUBLAS_WORKSPACE_CONFIG=:4096:8  # Needed for setting deterministic funct
 #rcps_flag="no-rcps"
 
 ## Hyena
-#seq_len=16384
+#seq_len=131072
 #bp_per_token=1
 #embed_dump_batch_size=1
 #model_name_or_path="LongSafari/hyenadna-medium-160k-seqlen-hf"
-#name="hyena_downstream-seqlen=16k"
+#name="hyena_downstream-seqlen=131k"
 #rcps_flag="no-rcps"
 
 ## Caduceus-Ph
@@ -56,11 +56,11 @@ export CUBLAS_WORKSPACE_CONFIG=:4096:8  # Needed for setting deterministic funct
 #rcps_flag="no-rcps"
 
 ## Caduceus-PS
-#seq_len=16384
+#seq_len=131072
 #bp_per_token=1
 #embed_dump_batch_size=1
 #model_name_or_path="kuleshov-group/caduceus-ps_seqlen-131k_d_model-256_n_layer-16"
-#name="caduceus-ps_downstream-seqlen=16k"
+#name="caduceus-ps_downstream-seqlen=131k"
 #rcps_flag="rcps"
 #####################################################################################
 
