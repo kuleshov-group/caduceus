@@ -497,6 +497,12 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+        self.init_scorer()
+
+    def init_scorer(self, initializer_range=0.02):
+        initializer_range = self.config.initializer_cfg.get("initializer_range", initializer_range) \
+            if self.config.initializer_cfg is not None else initializer_range
+        self.score.weight.data.normal_(std=initializer_range)
 
     def get_input_embeddings(self):
         return self.caduceus.backbone.embeddings.word_embeddings
