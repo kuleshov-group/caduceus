@@ -119,7 +119,7 @@ python -m train \
   model.config.bidirectional_weight_tie=true \
   model.config.rcps=true \
   optimizer.lr="8e-3" \
-  train.global_batch_size=8 \
+  train.global_batch_size=1024 \
   trainer.max_steps=10000 \
   +trainer.val_check_interval=10000 \
   wandb=null
