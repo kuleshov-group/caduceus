@@ -9,6 +9,8 @@
 import copy
 from typing import Any, List, Union
 
+import pandas as pd
+
 import torch
 from datasets import Dataset
 from torch.utils.data.dataloader import DataLoader
@@ -25,6 +27,253 @@ from src.dataloaders.fault_tolerant_sampler import RandomFaultTolerantSampler
 
 logger = src.utils.train.get_logger(__name__)
 
+
+class TCGADataset(torch.utils.data.Dataset):
+    def __init__(
+            self,split,
+            df_path,
+            max_length,
+            mlm=False,
+            seqs_per_pat=1024,
+            mlm_probability=0.15,
+            pad_max_length=None,
+            tokenizer=None,
+            tokenizer_name=None,
+            add_eos=False,
+            return_seq_indices=False,
+            rc_aug=False,
+            return_augs=False,
+    ):
+        self.df = pd.read_csv(df_path)
+        self.pat_list = self.df['Patient_ID'].unique().tolist()
+        self.seqs_per_pat = seqs_per_pat
+        self.tokenizer = tokenizer
+        
+        self.mlm = mlm
+        self.mlm_probability = mlm_probability
+        if self.mlm and self.mlm_probability <= 0.0:
+            raise ValueError(f"`mlm_probability` has to be > 0.0, got {self.mlm_probability}.")
+        if self.mlm:
+            # TODO: see if this helps
+            # self.eligible_replacements = torch.tensor(
+            #     tokenizer("ACGT", add_special_tokens=False)["input_ids"], dtype=torch.long
+            # )
+            self.eligible_replacements = None
+        else:
+            self.eligible_replacements = None
+        self.max_length = max_length
+        self.pad_max_length = pad_max_length if pad_max_length is not None else max_length
+        self.tokenizer_name = tokenizer_name
+        self.tokenizer = tokenizer
+        self.return_augs = return_augs
+        self.add_eos = add_eos
+        
+    def __len__(self):
+        return len(self.pat_list)
+    
+    @staticmethod
+    def replace_value(x, old_value, new_value):
+        """Helper for replacing values in a tensor."""
+        return torch.where(x == old_value, new_value, x)
+    
+    def __getitem__(self, idx):
+        pat = self.pat_list[idx]
+        #TODO: get tokens from tokenizer (adaptive and stuff)
+        seqs = [f"[REF] {k} [MUT] {v}" for k,v in zip(self.df[self.df['Patient_ID']==pat]["Ref_Sequence"].values,self.df[self.df['Patient_ID']==pat]["Alt_Sequence"].values)]
+        seq = " [SEP] ".join(seqs)
+        seq = self.tokenizer(seq,padding="max_length",
+                max_length=self.pad_max_length,
+                truncation=True,
+                add_special_tokens=False)["input_ids"] # do we need true here?
+        if self.add_eos:
+            # append list seems to be faster than append tensor
+            seq.append(self.tokenizer.sep_token_id)
+        
+        # convert to tensor
+        seq = torch.LongTensor(seq)
+
+        # replace N token with a pad token, so we can ignore it in the loss
+        seq = self.replace_value(seq, self.tokenizer._vocab_str_to_int["N"], self.tokenizer.pad_token_id)
+
+        if self.mlm:
+            data, target = mlm_getitem(
+                seq,
+                mlm_probability=self.mlm_probability,
+                contains_eos=self.add_eos,
+                tokenizer=self.tokenizer,
+                eligible_replacements=self.eligible_replacements,
+            )
+
+        else:
+            data = seq[:-1].clone()
+            target = seq[1:].clone()
+
+        return data, target
+
+class TCGA(SequenceDataset):
+    """
+    Base class, other dataloaders can inherit from this class.
+
+    You must implement the following functions:
+        - __init__
+        - setup
+
+    You can then use (already have access to) the following functions:
+        - train_dataloader
+        - val_dataloader
+        - test_dataloader
+
+    """
+    _name_ = "tcga"  # this name is how the dataset config finds the right dataloader
+
+    def __init__(self, df_path, seqs_per_pat, tokenizer_name=None,dataset_config_name=None, max_length=1024, d_output=2,
+                 rc_aug=False,
+                 max_length_val=None, max_length_test=None, val_ratio=0.0005, val_split_seed=2357,
+                 add_eos=True, detokenize=False, val_only=False, batch_size=32, batch_size_eval=None, shuffle=False,
+                 num_workers=1,
+                 fault_tolerant=False, ddp=False,
+                 fast_forward_epochs=None, fast_forward_batches=None,
+                 mlm=False, mlm_probability=0.15,
+                 *args, **kwargs):
+        self.dataset_config_name = dataset_config_name
+        self.tokenizer_name = tokenizer_name
+        self.d_output = d_output
+        self.rc_aug = rc_aug  # reverse compliment augmentation
+        self.max_length = max_length
+        self.max_length_val = max_length_val if max_length_val is not None else max_length
+        self.max_length_test = max_length_test if max_length_test is not None else max_length
+        self.val_ratio = val_ratio
+        self.val_split_seed = val_split_seed
+        self.val_only = val_only
+        self.add_eos = add_eos
+        self.detokenize = detokenize
+        self.batch_size = batch_size
+        self.batch_size_eval = batch_size_eval if batch_size_eval is not None else self.batch_size
+        self.shuffle = shuffle
+        self.num_workers = num_workers
+        self.df_path = df_path
+        self.seqs_per_pat = seqs_per_pat
+
+        # handle if file paths are None (default paths)
+
+        if fault_tolerant:
+            assert self.shuffle
+        self.fault_tolerant = fault_tolerant
+        if ddp:
+            assert fault_tolerant
+        self.ddp = ddp
+        self.fast_forward_epochs = fast_forward_epochs
+        self.fast_forward_batches = fast_forward_batches
+        if self.fast_forward_epochs is not None or self.fast_forward_batches is not None:
+            assert ddp and fault_tolerant
+
+        self.mlm = mlm
+        self.mlm_probability = mlm_probability
+
+        # To be instantiated in `setup`
+        self.tokenizer = None
+        self.vocab_size = 0
+
+    def setup(self, stage=None):
+        """Set up the tokenizer and init the datasets."""
+        # TODO instantiate with registry
+
+        if self.tokenizer_name == "char":
+            logger.info("**Using Char-level tokenizer**")
+            # self.tokenizer = CharacterTokenizer(
+            #     characters=["A", "C", "G", "T", "N"],
+            #     model_max_length=self.max_length,
+            #     add_special_tokens=False,
+            # )
+            self.tokenizer = CaduceusTokenizer(
+                model_max_length=self.max_length,
+                add_special_tokens=False
+            )
+        else:
+            raise NotImplementedError(f"Tokenizer {self.tokenizer_name} not implemented.")
+
+        self.vocab_size = len(self.tokenizer)
+
+        self.init_datasets()  # creates the datasets.  You can also just create this inside the setup() here.
+
+    def init_datasets(self):
+        """Init the datasets (separate from the tokenizer)"""
+
+        # Create all splits: torch datasets
+        self.dataset_train, self.dataset_val, self.dataset_test = [
+            TCGADataset(split="train",
+                        df_path = self.df_path,
+                        seqs_per_pat = self.seqs_per_pat,
+                        max_length=self.max_length,
+                        tokenizer=self.tokenizer,  # pass the tokenize wrapper
+                        tokenizer_name=self.tokenizer_name,
+                        add_eos=self.add_eos,
+                        return_seq_indices=False,
+                        rc_aug=self.rc_aug,
+                        return_augs=False,
+                        mlm=self.mlm,
+                        mlm_probability=self.mlm_probability, ),
+            #for split, max_len in
+            #zip(["train", "valid", "test"], [self.max_length, self.max_length_val, self.max_length_test])
+            None, None,
+        ]
+
+        return
+
+    def train_dataloader(self, **kwargs: Any) -> DataLoader:
+        """ The train dataloader """
+        if self.shuffle and self.fault_tolerant:
+            shuffle = False
+            # TD [2022-12-26]: We need the distributed_sampler_kwargs in case of model parallel:
+            # In that case the number of replicas and the data parallel rank are more complicated.
+            distributed_sampler_kwargs = self.trainer.distributed_sampler_kwargs
+            sampler = (FaultTolerantDistributedSampler(
+                self.dataset_train,
+                **distributed_sampler_kwargs
+            ) if self.ddp else RandomFaultTolerantSampler(self.dataset_train))
+            # TD [2022-08-06]: Only the DDP sampler supports fast-forwarding for now
+            # We assume that it's being resumed with the same number of GPUs
+            if self.ddp and self.fast_forward_epochs is not None and self.fast_forward_batches is not None:
+                sampler.load_state_dict({
+                    "epoch": self.fast_forward_epochs,
+                    "counter": self.fast_forward_batches * self.batch_size
+                })
+        else:
+            shuffle = self.shuffle
+            sampler = None
+        loader = self._data_loader(self.dataset_train, batch_size=self.batch_size,
+                                   shuffle=shuffle, sampler=sampler, **kwargs)
+        return loader
+
+    def val_dataloader(self, **kwargs: Any) -> Union[DataLoader, List[DataLoader]]:
+        """ The val dataloader """
+        kwargs["drop_last"] = False
+        return self._data_loader(self.dataset_val, batch_size=self.batch_size_eval, **kwargs)
+
+    def test_dataloader(self, **kwargs: Any) -> Union[DataLoader, List[DataLoader]]:
+        """ The test dataloader """
+        kwargs["drop_last"] = False
+        # TODO: Should have separate train and eval loaders
+        return self._data_loader(self.dataset_test, batch_size=self.batch_size_eval, **kwargs)
+
+    @staticmethod
+    def _data_loader(dataset: Dataset, batch_size: int, shuffle: bool = False, sampler=None, **kwargs) -> DataLoader:
+        return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            sampler=sampler,
+            **kwargs,
+        )
+
+    def load_state_dict(self, checkpoint):
+        if self.fault_tolerant:
+            self.fast_forward_epochs = checkpoint["loops"]["fit_loop"]["epoch_progress"]["current"]["completed"]
+            # TD [2022-08-07] ["epoch_loop.batch_progress"]["total"]["completed"] is 1 iteration
+            # behind, so we're using the optimizer"s progress. This is set correctly in seq.py.
+            self.fast_forward_batches = checkpoint["loops"]["fit_loop"]["epoch_loop.batch_progress"]["current"][
+                "completed"]
+        # At this point the train loader hasn't been constructed yet
 
 class HG38(SequenceDataset):
     """

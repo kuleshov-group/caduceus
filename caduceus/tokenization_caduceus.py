@@ -15,8 +15,10 @@ class CaduceusTokenizer(PreTrainedTokenizer):
                  characters: Sequence[str] = ("A", "C", "G", "T", "N"),
                  complement_map=None,
                  bos_token="[BOS]",
-                 eos_token="[SEP]",
+                 eos_token="[EOS]",
                  sep_token="[SEP]",
+                 ref_token="[REF]",
+                 mut_token="[MUT]",
                  cls_token="[CLS]",
                  pad_token="[PAD]",
                  mask_token="[MASK]",
@@ -32,13 +34,16 @@ class CaduceusTokenizer(PreTrainedTokenizer):
                 [UNK] with id=6. Following is a list of the special tokens with
                 their corresponding ids:
                     "[CLS]": 0
-                    "[SEP]": 1
-                    "[BOS]": 2
-                    "[MASK]": 3
-                    "[PAD]": 4
-                    "[RESERVED]": 5
-                    "[UNK]": 6
-                an id (starting at 7) will be assigned to each character.
+                    "[EOS]": 1
+                    "[SEP]": 2
+                    "[REF]": 3
+                    "[MUT]": 4
+                    "[BOS]": 5
+                    "[MASK]": 6
+                    "[PAD]": 7
+                    "[RESERVED]": 8
+                    "[UNK]": 9
+                an id (starting at 10) will be assigned to each character.
             complement_map (Optional[Dict[str, str]]): Dictionary with string complements for each character.
         """
         if complement_map is None:
@@ -48,13 +53,16 @@ class CaduceusTokenizer(PreTrainedTokenizer):
 
         self._vocab_str_to_int = {
             "[CLS]": 0,
-            "[SEP]": 1,
-            "[BOS]": 2,
-            "[MASK]": 3,
-            "[PAD]": 4,
-            "[RESERVED]": 5,
-            "[UNK]": 6,
-            **{ch: i + 7 for i, ch in enumerate(self.characters)},
+            "[EOS]": 1,
+            "[SEP]": 2,
+            "[REF]": 3,
+            "[MUT]": 4,
+            "[BOS]": 5,
+            "[MASK]": 6,
+            "[PAD]": 7,
+            "[RESERVED]": 8,
+            "[UNK]": 9,
+            **{ch: i + 10 for i, ch in enumerate(self.characters)},
         }
         self._vocab_int_to_str = {v: k for k, v in self._vocab_str_to_int.items()}
         add_prefix_space = kwargs.pop("add_prefix_space", False)
@@ -73,6 +81,7 @@ class CaduceusTokenizer(PreTrainedTokenizer):
             pad_token=pad_token,
             mask_token=mask_token,
             unk_token=unk_token,
+            additional_special_tokens=["[REF]","[MUT]","[RESERVED]"],
             add_prefix_space=add_prefix_space,
             model_max_length=model_max_length,
             padding_side=padding_side,
