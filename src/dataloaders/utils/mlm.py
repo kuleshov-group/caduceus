@@ -13,20 +13,33 @@ def mlm_getitem(seq, mlm_probability=0.15, contains_eos=False, tokenizer=None, e
     probability_matrix = torch.full(target.shape, mlm_probability)
     # TODO: Do we need to avoid "masking" special tokens as is done here?
     #  https://github.com/huggingface/transformers/blob/14666775a296a76c88e1aa686a9547f393d322e2/src/transformers/data/data_collator.py#L760-L766
+    
+    #if special_tokens_mask is None:
+    #TODO adjust for batch size > 1 case! #FIXME
+    special_tokens_mask = tokenizer.get_special_tokens_mask(target, already_has_special_tokens=True) 
+    special_tokens_mask = torch.tensor(special_tokens_mask, dtype=torch.bool)
+    #else:
+    #    special_tokens_mask = special_tokens_mask.bool()
+
+    probability_matrix.masked_fill_(special_tokens_mask, value=0.0)
     masked_indices = torch.bernoulli(probability_matrix).bool()
+    
+    #masked_indices = torch.bernoulli(probability_matrix).bool()
     target[~masked_indices] = tokenizer.pad_token_id  # We only compute loss on masked tokens
 
     # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-    indices_replaced = torch.bernoulli(torch.full(target.shape, 0.8)).bool() & masked_indices
-    data[indices_replaced] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
+    #indices_replaced = torch.bernoulli(torch.full(target.shape, 0.8)).bool() & masked_indices
+    #data[indices_replaced] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
 
+    data[masked_indices] = tokenizer.convert_tokens_to_ids(tokenizer.mask_token)
+    
     # 10% of the time, we replace masked input tokens with random word
-    indices_random = torch.bernoulli(torch.full(target.shape, 0.5)).bool() & masked_indices & ~indices_replaced
-    if eligible_replacements is not None:
-        rand_choice = torch.randint(eligible_replacements.shape[0], size=target.shape)
-        random_words = eligible_replacements[rand_choice]
-    else:
-        random_words = torch.randint(len(tokenizer), size=target.shape, dtype=torch.long)
-    data[indices_random] = random_words[indices_random]
+    #indices_random = torch.bernoulli(torch.full(target.shape, 0.5)).bool() & masked_indices & ~indices_replaced
+    #if eligible_replacements is not None:
+    #    rand_choice = torch.randint(eligible_replacements.shape[0], size=target.shape)
+    #    random_words = eligible_replacements[rand_choice]
+    #else:
+    #    random_words = torch.randint(len(tokenizer), size=target.shape, dtype=torch.long)
+    #data[indices_random] = random_words[indices_random]
     # The rest of the time (10% of the time) we keep the masked input tokens unchanged
     return data, target

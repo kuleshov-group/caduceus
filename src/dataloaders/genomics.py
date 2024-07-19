@@ -52,7 +52,7 @@ class TCGADataset(torch.utils.data.Dataset):
         random.Random(42).shuffle(self.pat_list)
         self.seqs_per_pat = seqs_per_pat
         self.tokenizer = tokenizer
-        
+        logger.info(f"{self.seqs_per_pat} will be loaded per patient.")
         self.mlm = mlm
         self.mlm_probability = mlm_probability
         if self.mlm and self.mlm_probability <= 0.0:
@@ -66,6 +66,7 @@ class TCGADataset(torch.utils.data.Dataset):
         else:
             self.eligible_replacements = None
         self.max_length = max_length
+        logger.info(f"{self.max_length=}")
         self.pad_max_length = pad_max_length if pad_max_length is not None else max_length
         self.tokenizer_name = tokenizer_name
         self.tokenizer = tokenizer

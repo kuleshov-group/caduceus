@@ -8,7 +8,7 @@ max_length: 124944 # (1024*2*60+2*1024+16)
 add_eos: True
 batch_size: 1  # per GPU
 batch_size_eval: ${eval:${.batch_size} * 2}
-num_workers: 8  # For preprocessing only
+num_workers: 12  # For preprocessing only
 shuffle: True
 __train_len: 10035
 __l_max: ${.max_length}

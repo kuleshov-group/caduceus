@@ -12,7 +12,7 @@ task:
 
 trainer:
   accelerator: gpu
-  devices: 4
+  devices: 2
   num_nodes: 1
   accumulate_grad_batches: ${div_up:${train.global_batch_size}, ${eval:${trainer.devices} * ${dataset.batch_size} * ${trainer.num_nodes}}}
   max_epochs: null
@@ -23,7 +23,8 @@ trainer:
 
 dataset:
   batch_size: 1 #${eval:1024//${trainer.devices}}
-  max_length: 124944
+  seqs_per_pat: 512 
+  max_length: ${eval:${dataset.seqs_per_pat}*2*60+2*${dataset.seqs_per_pat}+16}  #124944 # (1024*2*60+2*1024+16) # ${eval:${dataset.seqs_per_pat}*2*60+2*${dataset.seqs_per_pat}+16}
   # optional, default is max_length
   max_length_val: ${dataset.max_length}
   max_length_test: ${dataset.max_length}
