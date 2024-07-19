@@ -15,6 +15,8 @@ import torch
 from datasets import Dataset
 from torch.utils.data.dataloader import DataLoader
 
+import random
+
 from caduceus.tokenization_caduceus import CaduceusTokenizer
 import src.utils.train
 from src.dataloaders.base import SequenceDataset, default_data_path
@@ -24,6 +26,7 @@ from src.dataloaders.datasets.hg38_dataset import HG38Dataset
 from src.dataloaders.datasets.nucleotide_transformer_dataset import NucleotideTransformerDataset
 from src.dataloaders.fault_tolerant_sampler import FaultTolerantDistributedSampler
 from src.dataloaders.fault_tolerant_sampler import RandomFaultTolerantSampler
+from src.dataloaders.utils.mlm import mlm_getitem
 
 logger = src.utils.train.get_logger(__name__)
 
@@ -46,6 +49,7 @@ class TCGADataset(torch.utils.data.Dataset):
     ):
         self.df = pd.read_csv(df_path)
         self.pat_list = self.df['Patient_ID'].unique().tolist()
+        random.Random(42).shuffle(self.pat_list)
         self.seqs_per_pat = seqs_per_pat
         self.tokenizer = tokenizer
         
@@ -79,7 +83,8 @@ class TCGADataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         pat = self.pat_list[idx]
         #TODO: get tokens from tokenizer (adaptive and stuff)
-        seqs = [f"[REF] {k} [MUT] {v}" for k,v in zip(self.df[self.df['Patient_ID']==pat]["Ref_Sequence"].values,self.df[self.df['Patient_ID']==pat]["Alt_Sequence"].values)]
+        pat_df = self.df[self.df['Patient_ID']==pat][["Ref_Sequence","Alt_Sequence"]].sample(frac=1)
+        seqs = [f"[REF] {k} [MUT] {v}" for k,v in zip(pat_df["Ref_Sequence"].values[:self.seqs_per_pat],pat_df["Alt_Sequence"].values[:self.seqs_per_pat])]
         seq = " [SEP] ".join(seqs)
         seq = self.tokenizer(seq,padding="max_length",
                 max_length=self.pad_max_length,

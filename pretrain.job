@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=12
+#SBATCH --time=96:00:00
+#SBATCH --account=p_scads_pathology
+#SBATCH --mem-per-gpu=120G
+#SBATCH --job-name=genomics-fm
+#SBATCH --partition=alpha
+#SBATCH --mail-type=end
+#SBATCH --mail-user=tim.lenz@tu-dresden.de
+#SBATCH --gres=gpu:8
+#SBATCH --output=outs/genomics-fm-%j.out
+
+cd /data/horse/ws/s1787956-genomics/caduceus
+python -m train   experiment=tcga/tcga   callbacks.model_checkpoint_every_n_steps.every_n_train_steps=500   dataset.mlm=true   dataset.mlm_probability=0.15   dataset.rc_aug=false   model=caduceus   model.config.d_model=256   model.config.n_layer=16   optimizer.lr="5e-3"   trainer.max_steps=10000   wandb=null
