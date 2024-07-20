@@ -12,7 +12,7 @@ task:
 
 trainer:
   accelerator: gpu
-  devices: 2
+  devices: 8
   num_nodes: 1
   accumulate_grad_batches: ${div_up:${train.global_batch_size}, ${eval:${trainer.devices} * ${dataset.batch_size} * ${trainer.num_nodes}}}
   max_epochs: null

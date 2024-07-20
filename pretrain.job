@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=12
-#SBATCH --time=96:00:00
+#SBATCH --time=24:00:00
 #SBATCH --account=p_scads_pathology
 #SBATCH --mem-per-gpu=120G
 #SBATCH --job-name=genomics-fm
@@ -14,4 +14,4 @@
 #SBATCH --output=outs/genomics-fm-%j.out
 
 cd /data/horse/ws/s1787956-genomics/caduceus
-python -m train   experiment=tcga/tcga   callbacks.model_checkpoint_every_n_steps.every_n_train_steps=500   dataset.mlm=true   dataset.mlm_probability=0.15   dataset.rc_aug=false   model=caduceus   model.config.d_model=256   model.config.n_layer=16   optimizer.lr="5e-3"   trainer.max_steps=10000   wandb=null
+python -m train   experiment=tcga/tcga   callbacks.model_checkpoint_every_n_steps.every_n_train_steps=500   dataset.mlm=true   dataset.mlm_probability=0.4   dataset.rc_aug=false   model=caduceus   model.config.d_model=512  model.config.n_layer=16   optimizer.lr="5e-3"   trainer.max_steps=10000 dataset.seqs_per_pat=512  wandb=null

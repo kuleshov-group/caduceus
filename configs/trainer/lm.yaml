@@ -1,7 +1,7 @@
 accumulate_grad_batches: 1
 # accelerator: null # set to 'ddp' for distributed
 # amp_backend: native # 'native' | 'apex'
-gpus: 2 #8 
+gpus: 8 #8 
 max_epochs: 50
 gradient_clip_val: 0.0 # Gradient clipping
 log_every_n_steps: 10
