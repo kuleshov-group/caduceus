@@ -18,8 +18,12 @@ from transformers.modeling_outputs import BaseModelOutputWithNoAttention, Masked
 try:
     from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
 except ImportError:
-    RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
-
+    #RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
+    try:
+        from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn
+    except ImportError:
+        RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
+    
 from .configuration_caduceus import CaduceusConfig
 from .modeling_rcps import RCPSAddNormWrapper, RCPSEmbedding, RCPSLMHead, RCPSMambaBlock
 
@@ -62,6 +66,7 @@ def create_block(
         norm_cls=norm_cls,
         fused_add_norm=fused_add_norm,
         residual_in_fp32=residual_in_fp32,
+        mlp_cls = nn.Identity,
     )
     block.layer_idx = layer_idx
     return block
@@ -85,7 +90,7 @@ class BiMambaWrapper(nn.Module):
             raise NotImplementedError(f"`{bidirectional_strategy}` strategy for bi-directionality is not implemented!")
         self.bidirectional = bidirectional
         self.bidirectional_strategy = bidirectional_strategy
-        self.mamba_fwd = Mamba(
+        self.mamba_fwd = Mamba2(
             d_model=d_model,
             **mamba_kwargs
         )
