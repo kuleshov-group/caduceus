@@ -7,7 +7,9 @@ from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
-from mamba_ssm.modules.mamba_simple import Mamba, Block
+#from mamba_ssm.modules.mamba_simple import Mamba, Block
+from mamba_ssm.modules.mamba2 import Mamba2
+from mamba_ssm.modules.block import Block
 from torch import nn
 from torch.nn import functional as F
 from transformers import PreTrainedModel
@@ -88,7 +90,7 @@ class BiMambaWrapper(nn.Module):
             **mamba_kwargs
         )
         if bidirectional:
-            self.mamba_rev = Mamba(
+            self.mamba_rev = Mamba2(
                 d_model=d_model,
                 **mamba_kwargs
             )
