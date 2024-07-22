@@ -269,6 +269,7 @@ class TCGA(SequenceDataset):
             batch_size=batch_size,
             shuffle=shuffle,
             sampler=sampler,
+            #drop_last=True,
             **kwargs,
         )
 
@@ -425,6 +426,7 @@ class HG38(SequenceDataset):
         else:
             shuffle = self.shuffle
             sampler = None
+        kwargs["drop_last"] = True
         loader = self._data_loader(self.dataset_train, batch_size=self.batch_size,
                                    shuffle=shuffle, sampler=sampler, **kwargs)
         return loader

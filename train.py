@@ -660,6 +660,7 @@ def train(config):
     # Load pretrained_model if specified
     if config.train.get("pretrained_model_path", None) is not None:
         # PTL style.  Note, method returns a new model object, and need to pass config.
+        log.info(f"Loading checkpoint from {config.train.pretrained_model_path}..")
         model = SequenceLightningModule.load_from_checkpoint(
             config.train.pretrained_model_path,
             config=config,

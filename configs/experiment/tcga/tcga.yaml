@@ -20,10 +20,11 @@ trainer:
   precision: 16  # bf16 only a100
   gradient_clip_val: 1.0
   limit_val_batches: 0 #0.125
+  detect_anomaly: true
 
 dataset:
   batch_size: 1 #${eval:1024//${trainer.devices}}
-  seqs_per_pat: 512 
+  seqs_per_pat: 1024 
   max_length: ${eval:${dataset.seqs_per_pat}*2*60+2*${dataset.seqs_per_pat}+16}  #124944 # (1024*2*60+2*1024+16) # ${eval:${dataset.seqs_per_pat}*2*60+2*${dataset.seqs_per_pat}+16}
   # optional, default is max_length
   max_length_val: ${dataset.max_length}
@@ -54,3 +55,4 @@ train:
   gpu_mem: ${eval:"round(float(__import__('subprocess').check_output('nvidia-smi -i 0 --query-gpu=memory.total --format=csv,noheader,nounits', shell=True).strip().decode()) / 1000)"}
   seed: 2222
   global_batch_size: 256  # effects the scheduler, need to set properly
+  pretrained_model_path: /mnt/bulk-neptune/timlenz/tumpe/caduceus/outputs/2024-07-21/11-06-28-196644/checkpoints/last.ckpt/mnt/bulk-neptune/timlenz/tumpe/caduceus/outputs/2024-07-21/11-06-28-196644/checkpoints/last.ckpt

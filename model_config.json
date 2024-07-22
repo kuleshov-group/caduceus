@@ -1,0 +1,33 @@
+{
+    "config": {
+        "_target_": "caduceus.configuration_caduceus.CaduceusConfig",
+        "d_model": 512,
+        "n_layer": 16,
+        "vocab_size": 12,
+        "ssm_cfg": {
+            "d_state": 128,
+            "d_conv": 4,
+            "expand": 2,
+            "dt_min": 0.001,
+            "dt_max": 0.1,
+            "dt_init_floor": 0.0001,
+            "conv_bias": true,
+            "bias": false
+        },
+        "rms_norm": true,
+        "fused_add_norm": true,
+        "residual_in_fp32": false,
+        "pad_vocab_size_multiple": 8,
+        "norm_epsilon": 1e-05,
+        "initializer_cfg": {
+            "initializer_range": 0.02,
+            "rescale_prenorm_residual": true,
+            "n_residuals_per_layer": 1
+        },
+        "bidirectional": "true,",
+        "bidirectional_strategy": "add",
+        "bidirectional_weight_tie": true,
+        "rcps": false,
+        "complement_map": null
+    }
+}

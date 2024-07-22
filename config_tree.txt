@@ -1,0 +1,171 @@
+CONFIG
+├── train
+│   └── seed: 2222                                                                                                    
+│       interval: step                                                                                                
+│       monitor: test/loss                                                                                            
+│       mode: min                                                                                                     
+│       ema: 0.0                                                                                                      
+│       test: true                                                                                                    
+│       debug: false                                                                                                  
+│       ignore_warnings: false                                                                                        
+│       optimizer_param_grouping:                                                                                     
+│         bias_weight_decay: false                                                                                    
+│         normalization_weight_decay: false                                                                           
+│       state:                                                                                                        
+│         mode: null                                                                                                  
+│         n_context: 0                                                                                                
+│         n_context_eval: 0                                                                                           
+│       ckpt: checkpoints/last.ckpt                                                                                   
+│       disable_dataset: false                                                                                        
+│       validate_at_start: false                                                                                      
+│       pretrained_model_path: /mnt/bulk-neptune/timlenz/tumpe/caduceus/outputs/2024-07-21/11-06-28-196644/checkpoints
+│       pretrained_model_strict_load: true                                                                            
+│       pretrained_model_state_hook:                                                                                  
+│         _name_: null                                                                                                
+│       post_init_hook:                                                                                               
+│         _name_: null                                                                                                
+│       layer_decay:                                                                                                  
+│         _name_: null                                                                                                
+│         decay: 0.7                                                                                                  
+│       gpu_mem: 49                                                                                                   
+│       global_batch_size: 256                                                                                        
+│                                                                                                                     
+├── wandb
+│   └── None                                                                                                          
+├── trainer
+│   └── _target_: pytorch_lightning.Trainer                                                                           
+│       devices: 2                                                                                                    
+│       accelerator: gpu                                                                                              
+│       accumulate_grad_batches: 128                                                                                  
+│       max_epochs: null                                                                                              
+│       gradient_clip_val: 1.0                                                                                        
+│       log_every_n_steps: 10                                                                                         
+│       limit_train_batches: 1.0                                                                                      
+│       limit_val_batches: 0                                                                                          
+│       num_sanity_val_steps: 2                                                                                       
+│       num_nodes: 1                                                                                                  
+│       max_steps: 10000                                                                                              
+│       precision: 16                                                                                                 
+│       detect_anomaly: true                                                                                          
+│                                                                                                                     
+├── dataset
+│   └── _name_: tcga                                                                                                  
+│       df_path: /mnt/bulk-neptune/timlenz/tumpe/data/MUTATION/tcga_mutations_controlled.csv                          
+│       seqs_per_pat: 1024                                                                                            
+│       dataset_name: tcga                                                                                            
+│       tokenizer_name: char                                                                                          
+│       cache_dir: null                                                                                               
+│       max_length: 124944                                                                                            
+│       add_eos: true                                                                                                 
+│       batch_size: 1                                                                                                 
+│       batch_size_eval: 2                                                                                            
+│       num_workers: 12                                                                                               
+│       shuffle: true                                                                                                 
+│       max_length_val: 124944                                                                                        
+│       max_length_test: 124944                                                                                       
+│       pad_max_length: null                                                                                          
+│       rc_aug: false                                                                                                 
+│       use_fixed_len_val: false                                                                                      
+│       mlm: false                                                                                                    
+│       mlm_probability: 0.4                                                                                          
+│                                                                                                                     
+├── optimizer
+│   └── _name_: adamw                                                                                                 
+│       lr: 0.001                                                                                                     
+│       weight_decay: 0.1                                                                                             
+│       betas:                                                                                                        
+│       - 0.9                                                                                                         
+│       - 0.95                                                                                                        
+│                                                                                                                     
+├── scheduler
+│   └── _name_: cosine_warmup_timm                                                                                    
+│       t_in_epochs: false                                                                                            
+│       t_initial: 9000.0                                                                                             
+│       lr_min: 0.0001                                                                                                
+│       warmup_lr_init: 1.0e-06                                                                                       
+│       warmup_t: 1000.0                                                                                              
+│       warmup_prefix: true                                                                                           
+│                                                                                                                     
+├── callbacks
+│   └── learning_rate_monitor:                                                                                        
+│         logging_interval: step                                                                                      
+│       timer:                                                                                                        
+│         step: true                                                                                                  
+│         inter_step: false                                                                                           
+│         epoch: true                                                                                                 
+│         val: true                                                                                                   
+│       params:                                                                                                       
+│         total: true                                                                                                 
+│         trainable: true                                                                                             
+│         fixed: true                                                                                                 
+│       model_checkpoint:                                                                                             
+│         monitor: test/loss                                                                                          
+│         mode: min                                                                                                   
+│         save_top_k: 1                                                                                               
+│         save_last: false                                                                                            
+│         dirpath: checkpoints/                                                                                       
+│         filename: test/loss                                                                                         
+│         auto_insert_metric_name: false                                                                              
+│         verbose: true                                                                                               
+│       model_checkpoint_every_n_steps:                                                                               
+│         monitor: train/loss                                                                                         
+│         mode: min                                                                                                   
+│         save_top_k: 0                                                                                               
+│         save_last: true                                                                                             
+│         dirpath: checkpoints/                                                                                       
+│         filename: train/loss                                                                                        
+│         auto_insert_metric_name: false                                                                              
+│         verbose: true                                                                                               
+│         every_n_train_steps: 500                                                                                    
+│                                                                                                                     
+├── task
+│   └── _name_: lm                                                                                                    
+│       loss:                                                                                                         
+│         _name_: cross_entropy                                                                                       
+│         ignore_index: 4                                                                                             
+│       torchmetrics:                                                                                                 
+│       - perplexity                                                                                                  
+│       - num_tokens                                                                                                  
+│                                                                                                                     
+├── encoder
+│   └── None                                                                                                          
+├── decoder
+│   └── None                                                                                                          
+├── loader
+│   └── num_workers: 36                                                                                               
+│       pin_memory: true                                                                                              
+│       drop_last: true                                                                                               
+│                                                                                                                     
+├── model
+│   └── _name_: caduceus_lm                                                                                           
+│       config:                                                                                                       
+│         _target_: caduceus.configuration_caduceus.CaduceusConfig                                                    
+│         d_model: 512                                                                                                
+│         n_layer: 16                                                                                                 
+│         vocab_size: 12                                                                                              
+│         ssm_cfg:                                                                                                    
+│           d_state: 128                                                                                              
+│           d_conv: 4                                                                                                 
+│           expand: 2                                                                                                 
+│           dt_min: 0.001                                                                                             
+│           dt_max: 0.1                                                                                               
+│           dt_init_floor: 0.0001                                                                                     
+│           conv_bias: true                                                                                           
+│           bias: false                                                                                               
+│         rms_norm: true                                                                                              
+│         fused_add_norm: true                                                                                        
+│         residual_in_fp32: false                                                                                     
+│         pad_vocab_size_multiple: 8                                                                                  
+│         norm_epsilon: 1.0e-05                                                                                       
+│         initializer_cfg:                                                                                            
+│           initializer_range: 0.02                                                                                   
+│           rescale_prenorm_residual: true                                                                            
+│           n_residuals_per_layer: 1                                                                                  
+│         bidirectional: true,                                                                                        
+│         bidirectional_strategy: add                                                                                 
+│         bidirectional_weight_tie: true                                                                              
+│         rcps: false                                                                                                 
+│         complement_map: null                                                                                        
+│                                                                                                                     
+└── defaults
+    └── [{'/pipeline': 'tcga'}, {'/model': 'caduceus'}, {'override /scheduler': 'cosine_warmup_timm'}]                

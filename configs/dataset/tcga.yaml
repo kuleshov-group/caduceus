@@ -1,12 +1,12 @@
 _name_: tcga
-df_path: '/data/horse/ws/s1787956-genomics/data/MUTATION/tcga_mutations_controlled.csv'
+df_path: '/mnt/bulk-neptune/timlenz/tumpe/data/MUTATION/tcga_mutations_controlled.csv'
 seqs_per_pat: 1024  
 dataset_name: tcga
 tokenizer_name: null
 cache_dir: null
 max_length: 124944 # (1024*2*60+2*1024+16)
 add_eos: True
-batch_size: 1  # per GPU
+batch_size: 4  # per GPU
 batch_size_eval: ${eval:${.batch_size} * 2}
 num_workers: 12  # For preprocessing only
 shuffle: True
