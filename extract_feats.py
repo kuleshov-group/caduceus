@@ -36,7 +36,7 @@ torch.backends.cudnn.allow_tf32 = True
 #config = "/mnt/bulk-neptune/timlenz/tumpe/caduceus/configs/experiment/tcga/tcga.yaml"
 config = "/mnt/bulk-neptune/timlenz/tumpe/caduceus/outputs/2024-07-21/11-06-28-196644/config.json"
 df_path = '/mnt/bulk-neptune/timlenz/tumpe/data/MUTATION/tcga_mutations_controlled.csv'
-outdir = "/mnt/bulk-neptune/timlenz/tumpe/data/features/caduceus-mamba-2-1024-e6"
+outdir = "/mnt/bulk-neptune/timlenz/tumpe/data/features/caduceus-mamba-2-1024-e10"
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 # %%

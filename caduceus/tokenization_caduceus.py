@@ -81,7 +81,7 @@ class CaduceusTokenizer(PreTrainedTokenizer):
             pad_token=pad_token,
             mask_token=mask_token,
             unk_token=unk_token,
-            additional_special_tokens=["[REF]","[MUT]","[RESERVED]"],
+            additional_special_tokens=[ref_token,mut_token,"[RESERVED]"],
             add_prefix_space=add_prefix_space,
             model_max_length=model_max_length,
             padding_side=padding_side,
