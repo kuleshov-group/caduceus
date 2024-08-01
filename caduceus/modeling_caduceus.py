@@ -7,7 +7,7 @@ from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
-#from mamba_ssm.modules.mamba_simple import Mamba, Block
+from mamba_ssm.modules.mamba_simple import Mamba
 from mamba_ssm.modules.mamba2 import Mamba2
 from mamba_ssm.modules.block import Block
 from torch import nn
@@ -42,6 +42,7 @@ def create_block(
         rcps=False,
         device=None,
         dtype=None,
+        use_mamba2=True,
 ):
     """Create Caduceus block.
 
@@ -55,7 +56,7 @@ def create_block(
         "bidirectional_strategy": bidirectional_strategy,
         "bidirectional_weight_tie": bidirectional_weight_tie,
     }
-    mixer_cls = partial(BiMambaWrapper, layer_idx=layer_idx, **ssm_cfg, **bidirectional_kwargs, **factory_kwargs)
+    mixer_cls = partial(BiMambaWrapper,use_mamba2=use_mamba2, layer_idx=layer_idx, **ssm_cfg, **bidirectional_kwargs, **factory_kwargs)
     norm_cls = partial(
         nn.LayerNorm if not rms_norm else RMSNorm, eps=norm_epsilon, **factory_kwargs
     )
@@ -81,6 +82,7 @@ class BiMambaWrapper(nn.Module):
             bidirectional: bool = True,
             bidirectional_strategy: Optional[str] = "add",
             bidirectional_weight_tie: bool = True,
+            use_mamba2 = True,
             **mamba_kwargs,
     ):
         super().__init__()
@@ -90,15 +92,27 @@ class BiMambaWrapper(nn.Module):
             raise NotImplementedError(f"`{bidirectional_strategy}` strategy for bi-directionality is not implemented!")
         self.bidirectional = bidirectional
         self.bidirectional_strategy = bidirectional_strategy
-        self.mamba_fwd = Mamba2(
-            d_model=d_model,
-            **mamba_kwargs
-        )
-        if bidirectional:
-            self.mamba_rev = Mamba2(
+        if use_mamba2:
+            self.mamba_fwd = Mamba2(
                 d_model=d_model,
                 **mamba_kwargs
             )
+        else:
+            self.mamba_fwd = Mamba(
+                d_model=d_model,
+                **mamba_kwargs
+            )
+        if bidirectional:
+            if use_mamba2:
+                self.mamba_rev = Mamba2(
+                    d_model=d_model,
+                    **mamba_kwargs
+                )
+            else:
+                self.mamba_rev = Mamba(
+                    d_model=d_model,
+                    **mamba_kwargs
+                )
             if bidirectional_weight_tie:  # Tie in and out projections (where most of param count lies)
                 self.mamba_rev.in_proj.weight = self.mamba_fwd.in_proj.weight
                 self.mamba_rev.in_proj.bias = self.mamba_fwd.in_proj.bias

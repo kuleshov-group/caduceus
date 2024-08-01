@@ -1,5 +1,6 @@
 _name_: tcga
 df_path: '/mnt/bulk-neptune/timlenz/tumpe/data/MUTATION/tcga_mutations_controlled.csv'
+#df_path: ''/data/horse/ws/s1787956-genomics/data/MUTATION/tcga_mutations_controlled.csv''
 seqs_per_pat: 1024  
 dataset_name: tcga
 tokenizer_name: null

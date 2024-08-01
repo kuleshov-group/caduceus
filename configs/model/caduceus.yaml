@@ -37,6 +37,7 @@ config:
   bidirectional_strategy: "add"
   bidirectional_weight_tie: true
   rcps: false
+  use_mamba2: true
 
   # Used for RCPSEmbedding / RCPSLMHead (will be filled in during model instantiation using info from tokenizer)
   complement_map: null
