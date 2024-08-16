@@ -11,7 +11,6 @@ import torch
 
 from src.utils.train import get_logger
 from finetuning_glrb.finetune_variant_effect_pathogenic_clinvar import main_lit as finetune_vep_clinvar
-#from finetuning.finetune_caduceus_vep import main as finetune_vep_eqtl
 from finetuning_glrb.finetune_variant_effect_OMIM import main_lit as main_omim
 from finetuning_glrb.finetune_variant_effect_causal_eqtl import main_lit as finetune_vep_eqtl
 from finetuning_glrb.finetune_bulk_rna import main_lit as finetune_bulk_rna_expression

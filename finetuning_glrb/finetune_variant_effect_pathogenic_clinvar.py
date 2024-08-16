@@ -10,9 +10,7 @@ import wandb
 import lightning.pytorch as pl
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-import numpy as np
 from datasets import load_dataset, load_from_disk
-from sklearn import preprocessing
 from sklearn.metrics import  precision_recall_curve, auc, roc_auc_score
 from transformers import DefaultDataCollator
 from src.utils.train import get_logger
