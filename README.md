@@ -151,7 +151,7 @@ python -m train \
     callbacks.model_checkpoint_every_n_steps.every_n_train_steps=5000 \
     dataset.dataset_name="dummy_mouse_enhancers_ensembl" \
     dataset.train_val_split_seed=1 \
-    dataset.batch_size=128 \
+    dataset.batch_size=256 \
     dataset.rc_aug=false \
     +dataset.conjoin_train=false \
     +dataset.conjoin_test=false \
