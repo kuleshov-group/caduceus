@@ -16,6 +16,7 @@ from finetuning_glrb.finetune_variant_effect_causal_eqtl import main_lit as fine
 from finetuning_glrb.finetune_bulk_rna import main_lit as finetune_bulk_rna_expression
 from finetuning_glrb.finetune_chromatin import main_histone_marks,main_dna_accessibility
 from finetuning_glrb.finetune_regulatory_elements import main_enhancer, main_promoter
+from finetuning_glrb.finetune_cage import main_lit as main_cage
 
 log = get_logger(__name__)
 
@@ -31,7 +32,7 @@ def main(opts):
     elif opts.task == "bulk_rna_expression":
         finetune_bulk_rna_expression(opts)
     elif opts.task == "cage_prediction":
-        raise ValueError("Invalid task selected or not implemented yet.") 
+        main_cage(opts)
     elif opts.task == "chromatin_features_histone_marks":
         main_histone_marks(opts)   
     elif opts.task == "chromatin_features_dna_accessibility":
