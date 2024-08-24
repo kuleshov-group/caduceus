@@ -153,8 +153,12 @@ class Lit_DNAModelForCAGE(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.save_hyperparameters(args)
-        self.rcps = args.rcps
-        self.model = DNAModelForCAGE(args)
+        self.setup()
+        
+    def setup(self,stage=None):
+
+        self.rcps = self.hparams.rcps
+        self.model = DNAModelForCAGE(self.hparams)
         self.criterion = nn.MSELoss()
         self.validation_step_preds = []
         self.validation_step_labels = []

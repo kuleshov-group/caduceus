@@ -145,8 +145,11 @@ class Lit_RegulatoryElements(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.save_hyperparameters(args)
-        self.model = DNAModelForRegulatoryElements(args)
-        self.task = args.task
+        self.setup()
+        
+    def setup(self,stage=None):
+        self.model = DNAModelForRegulatoryElements(self.hparams)
+        self.task = self.hparams.task
         self.criterion = nn.BCEWithLogitsLoss()
         self.validation_step_preds = []
         self.validation_step_labels = []

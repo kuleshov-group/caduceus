@@ -180,7 +180,10 @@ class Lit_OMIMFinetuning(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.save_hyperparameters(args)
-        self.model = DNAModelForOMIMFinetuning(args)
+        self.setup()
+
+    def setup(self,stage=None):
+        self.model = DNAModelForOMIMFinetuning(self.hparams)
         self.criterion = nn.CrossEntropyLoss()
         self.validation_step_preds = []
         self.validation_step_labels = []

@@ -151,7 +151,10 @@ class Lit_ChromatinFeatures(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.save_hyperparameters(args)
-        self.model = DNAModelForChromatineFeatures(args)
+        self.setup()
+        
+    def setup(self,stage=None):
+        self.model = DNAModelForChromatineFeatures(self.hparams)
         self.criterion = nn.BCEWithLogitsLoss()
         self.validation_step_preds = []
         self.validation_step_labels = []
