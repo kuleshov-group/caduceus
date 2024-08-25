@@ -75,7 +75,6 @@ if __name__ == "__main__":
     parser.add_argument("--train_batch_size", type=int, default=16, help="Batch size for training.")
     parser.add_argument("--test_batch_size", type=int, default=16, help="Batch size for testing/validation.")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers.")
-    parser.add_argument("--preprocessed_dataset_path", type=str, default=None, help="Path to preprocessed dataset.")
     parser.add_argument("--rcps", type=bool, default=False, help="Using rcps when extracting embeddings or not.")
     parser.add_argument("--num_epochs", type=int, default=1, help="Number of epochs to train.")
     parser.add_argument(

@@ -12,15 +12,15 @@ To fine-tune a model, execute the `finetune.sh` script. The script runs the `mai
 
 **`--seq_len`**: Specifies the sequence length in base pairs (bp).
 
-**`--model_name`**: Name of the pre-trained model to fine-tune.
+**`--model_name`**: Name of the pre-trained model to fine-tune (on the HF hub).
 
-**`--bp_per_token`**: Defines the number of base pairs per token.
+**`--bp_per_token`**: Defines the number of base pairs per token used in the tokenization process of the model.
 
-**`--save_dir`**: Directory where the outputs of the downstream task will be saved.
+**`--save_dir`**: Directory where the checkpoints and logs will be saved.
 
 **`--wandb_api_key`**: API key for Weights & Biases logging.
 
-**`--name_wb`**: Name for the Weights & Biases embeddings model.
+**`--name_wb`**: Name for the Weights & Biases run.
 
 **`--train_batch_size`**: Defines the batch size for training.
 
@@ -28,21 +28,19 @@ To fine-tune a model, execute the `finetune.sh` script. The script runs the `mai
 
 **`--num_workers`**: Number of workers to use for data loading.
 
-**`--preprocessed_dataset_path`**: Path to the preprocessed dataset.
-
 **`--rcps`**: Indicates whether to use RCPS when extracting embeddings.
 
 **`--num_epochs`**: Specifies the number of epochs to train.
 
-**`--precision`**: Choose the precision mode. Options include: `"transformer-engine"`, `"transformer-engine-float16"`, `"16-true"`, `"16-mixed"`, `"bf16-true"`, `"bf16-mixed"`, `"32-true"`, `"64-true"`.
+**`--precision`**: Choose the precision. Options include: `"transformer-engine"`, `"transformer-engine-float16"`, `"16-true"`, `"16-mixed"`, `"bf16-true"`, `"bf16-mixed"`, `"32-true"`, `"64-true"`.
 
-**`--accumulate_grad_batches`**: Number of batches for which to accumulate gradients.
+**`--accumulate_grad_batches`**: Number of batches for which to accumulate gradients accross devices.
 
 **`--learning_rate`**: Specifies the learning rate for the optimizer.
 
 **`--patience`**: Determines the number of epochs with no improvement after which training will be stopped.
 
-**`--log_interval`**: Interval (in steps) at which to log training metrics.
+**`--log_interval`**: Interval (in steps) at which to log training metrics and run a validation step.
 
 **`--train_ratio`**: Specifies the ratio of the dataset to use for training.
 
