@@ -10,13 +10,13 @@ import torch
 
 
 from src.utils.train import get_logger
-from finetuning_glrb.finetune_variant_effect_pathogenic_clinvar import main_lit as finetune_vep_clinvar
-from finetuning_glrb.finetune_variant_effect_OMIM import main_lit as main_omim
-from finetuning_glrb.finetune_variant_effect_causal_eqtl import main_lit as finetune_vep_eqtl
-from finetuning_glrb.finetune_bulk_rna import main_lit as finetune_bulk_rna_expression
-from finetuning_glrb.finetune_chromatin import main_histone_marks,main_dna_accessibility
-from finetuning_glrb.finetune_regulatory_elements import main_enhancer, main_promoter
-from finetuning_glrb.finetune_cage import main_lit as main_cage
+from finetuning_glrb.finetune_variant_effect_pathogenic_clinvar import finetune as finetune_vep_clinvar
+from finetuning_glrb.finetune_variant_effect_OMIM import finetune as main_omim
+from finetuning_glrb.finetune_variant_effect_causal_eqtl import finetune as finetune_vep_eqtl
+from finetuning_glrb.finetune_bulk_rna import finetune as finetune_bulk_rna_expression
+from finetuning_glrb.finetune_chromatin import finetune_histone_marks,finetune_dna_accessibility
+from finetuning_glrb.finetune_regulatory_elements import finetune_enhancers, finetune_promoters
+from finetuning_glrb.finetune_cage import finetune as finetune_cage
 
 log = get_logger(__name__)
 
@@ -24,7 +24,6 @@ def main(opts):
     # Check if the value of args.task matches one of the predefined options
     if opts.task == "variant_effect_causal_eqtl":
         finetune_vep_eqtl(opts)
-        # Perform operations specific to this task
     elif opts.task == "variant_effect_pathogenic_clinvar":
         finetune_vep_clinvar(opts)
     elif opts.task == "variant_effect_pathogenic_omim":
@@ -32,15 +31,15 @@ def main(opts):
     elif opts.task == "bulk_rna_expression":
         finetune_bulk_rna_expression(opts)
     elif opts.task == "cage_prediction":
-        main_cage(opts)
+        finetune_cage(opts)
     elif opts.task == "chromatin_features_histone_marks":
-        main_histone_marks(opts)   
+        finetune_histone_marks(opts)   
     elif opts.task == "chromatin_features_dna_accessibility":
-        main_dna_accessibility(opts)    
+        finetune_dna_accessibility(opts)    
     elif opts.task == "regulatory_element_promoter":
-        main_promoter(opts)  
+        finetune_promoters(opts)  
     elif opts.task == "regulatory_element_enhancer":
-        main_enhancer(opts)
+        finetune_enhancers(opts)
         
 
 

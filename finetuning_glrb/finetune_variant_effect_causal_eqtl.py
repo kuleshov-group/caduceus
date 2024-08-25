@@ -391,7 +391,7 @@ class VariantEffectPredictionDataModule(pl.LightningDataModule):
 
         log.warning(f"Data downloaded and preprocessed successfully.")
 
-def main_lit(args):
+def finetune(args):
     """
     Main function to start process for Variant Effect Prediction Finetuning eQTL using PyTorch Lightning.
 

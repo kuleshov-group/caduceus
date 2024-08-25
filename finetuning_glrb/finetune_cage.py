@@ -326,7 +326,7 @@ class CAGEDataModule(pl.LightningDataModule):
         dataset.save_to_disk(self._get_preprocessed_cache_file())
         log.warning("Data downloaded and preprocessed successfully.")
 
-def main_lit(args):
+def finetune(args):
     """
     Main function to start the training process using PyTorch Lightning.
 

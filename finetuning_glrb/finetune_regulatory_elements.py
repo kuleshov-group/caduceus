@@ -444,7 +444,7 @@ class EnhancerDataModule(pl.LightningDataModule):
         dataset.save_to_disk(self._get_preprocessed_cache_file())
         log.warning("Data downloaded and preprocessed successfully.")
 
-def main_promoter(args):
+def finetune_promoters(args):
     """
     Main function to start training on Promoter regulatory elements with PyTorch Lightning.
 
@@ -500,7 +500,7 @@ def main_promoter(args):
     # Start the training process
     trainer.fit(model, data_module)
 
-def main_enhancer(args):
+def finetune_enhancers(args):
     """
     Main function to start training on Enhancer regulatory elements with PyTorch Lightning.
 

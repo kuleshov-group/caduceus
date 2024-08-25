@@ -443,7 +443,7 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
         dataset.save_to_disk(self._get_preprocessed_cache_file())
         log.warning("Data downloaded and preprocessed successfully.")
 
-def main_histone_marks(args):
+def finetune_histone_marks(args):
     """
     Main function to start finetuning on Histone Marks with PyTorch Lightning.
 
@@ -499,7 +499,7 @@ def main_histone_marks(args):
     # Start the training process
     trainer.fit(model, data_module)
 
-def main_dna_accessibility(args):
+def finetune_dna_accessibility(args):
     """
     Main function to start finetunning on DNA Accessibility with PyTorch Lightning.
 
