@@ -376,7 +376,7 @@ def finetune(args):
         limit_val_batches=args.eval_ratio,
         val_check_interval=args.log_interval,
         gradient_clip_val=1.0,
-        precision="16-mixed",
+        precision=args.precision,
         accumulate_grad_batches=args.accumulate_grad_batches,
         num_sanity_val_steps=0
     )

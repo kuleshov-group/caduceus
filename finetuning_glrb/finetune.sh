@@ -10,6 +10,7 @@ python finetuning_glrb/main.py \
     --test_batch_size 2 \
     --num_workers 6 \
     --num_epochs 100 \
+    --precision "16-mixed" \
     --learning_rate "3e-5" \
     --patience 30 \
     --log_interval 512 \

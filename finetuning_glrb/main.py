@@ -78,6 +78,13 @@ if __name__ == "__main__":
     parser.add_argument("--preprocessed_dataset_path", type=str, default=None, help="Path to preprocessed dataset.")
     parser.add_argument("--rcps", type=bool, default=False, help="Using rcps when extracting embeddings or not.")
     parser.add_argument("--num_epochs", type=int, default=1, help="Number of epochs to train.")
+    parser.add_argument(
+        "--precision",
+        type=str,
+        choices=['transformer-engine', 'transformer-engine-float16', '16-true', '16-mixed', 'bf16-true', 'bf16-mixed', '32-true', '64-true'],
+        required=True,
+        help="Choose one mode."
+    )
     parser.add_argument("--accumulate_grad_batches", type=int, default=1, help="Accumulate gradients")
     parser.add_argument("--learning_rate", type=float, default=1e-4, 
                         help="Learning rate for optimizer")
