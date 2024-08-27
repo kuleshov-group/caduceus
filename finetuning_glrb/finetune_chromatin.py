@@ -237,6 +237,7 @@ class HistoneMarksDataModule(pl.LightningDataModule):
     def __init__(self, config):
         super().__init__()
         self.seq_len = config.seq_len
+        self.bp_per_token = config.bp_per_token
         self.model_name = config.model_name
         self.train_batch_size = config.train_batch_size
         self.test_batch_size = config.test_batch_size
@@ -323,7 +324,7 @@ class HistoneMarksDataModule(pl.LightningDataModule):
             desc="Recast chromosome"
         )
         dataset = dataset.map(
-            partial(tokenize_variants, tokenizer=self.tokenizer, max_length=self.seq_len),
+            partial(tokenize_variants, tokenizer=self.tokenizer, max_length=self.seq_len//self.bp_per_token),
             batch_size=1000,
             batched=True,
             remove_columns=["sequence"],
@@ -345,6 +346,7 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
     def __init__(self, config):
         super().__init__()
         self.seq_len = config.seq_len
+        self.bp_per_token = config.bp_per_token
         self.model_name = config.model_name
         self.train_batch_size = config.train_batch_size
         self.test_batch_size = config.test_batch_size
@@ -431,7 +433,7 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
             desc="Recast chromosome"
         )
         dataset = dataset.map(
-            partial(tokenize_variants, tokenizer=self.tokenizer, max_length=self.seq_len),
+            partial(tokenize_variants, tokenizer=self.tokenizer, max_length=self.seq_len//self.bp_per_token),
             batch_size=1000,
             batched=True,
             remove_columns=["sequence"],
