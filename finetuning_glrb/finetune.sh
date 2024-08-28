@@ -1,18 +1,18 @@
 python finetuning_glrb/main.py \
-    --task "cage_prediction" \
-    --seq_len 12032 \
-    --model_name "InstaDeepAI/nucleotide-transformer-v2-50m-multi-species" \
-    --bp_per_token 6 \
+    --task "bulk_rna_expression" \
+    --seq_len 12000 \
+    --model_name "your_model_name_from_the_hub" \
+    --bp_per_token TBD \
     --save_dir "output/" \
-    --wandb_api_key "765bad652bcb6ce569641fc334bcf0f0eea5b1fb" \
-    --name_wb "cage--ntv2-12k" \
-    --train_batch_size 1 \
-    --test_batch_size 2 \
+    --wandb_api_key "your_wandb_api_key" \
+    --name_wb "your_wandb_run_name" \
+    --train_batch_size 4 \
+    --test_batch_size 4 \
     --num_workers 6 \
-    --num_epochs 100 \
+    --num_epochs 1 \
     --precision "16-mixed" \
     --learning_rate "3e-5" \
-    --patience 30 \
+    --patience 3 \
     --log_interval 512 \
     --accumulate_grad_batches 128 \
     --train_ratio 1.0 \
