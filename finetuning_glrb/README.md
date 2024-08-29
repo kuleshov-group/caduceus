@@ -38,8 +38,6 @@ To fine-tune a model, execute the `finetune.sh` script. The script runs the `mai
 
 **`--learning_rate`**: Specifies the learning rate for the optimizer.
 
-**`--patience`**: Determines the number of epochs with no improvement after which training will be stopped.
-
 **`--log_interval`**: Interval (in steps) at which to log training metrics and run a validation step.
 
 **`--train_ratio`**: Specifies the ratio of the dataset to use for training.
