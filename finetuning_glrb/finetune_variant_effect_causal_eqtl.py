@@ -4,6 +4,7 @@ from os import path as osp
 import re
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModelForMaskedLM, AutoModel, AutoTokenizer, AutoConfig
 import wandb
@@ -34,7 +35,7 @@ def recast_chromosome_tissue_dist2TSS(examples):
         dict with recast chromosome, tissue, and distance to TSS.
     """
     return {
-        "chromosome": -1 if examples["chromosome"] == "X" else int(examples["chromosome"]),
+        "chromosome": -1 if examples["chromosome"] in ["X","Y"] else int(examples["chromosome"]),
         "tissue": examples["tissue"],
         "distance_to_nearest_tss": examples["distance_to_nearest_tss"]
     }
@@ -256,7 +257,34 @@ class LitVEPFinetuning(pl.LightningModule):
                 self.validation_step_labels[i].extend(filtered_labels)
                 self.validation_step_preds[i].extend(filtered_preds)
 
+    def test_step(self, batch, batch_idx):
+        ref_input_ids = batch["ref_input_ids"]
+        alt_input_ids = batch["alt_input_ids"]
+        variant_index = batch["variant_idx"]
+        tissue_embed = batch["tissue_embed"]
+        labels = batch["labels"]
+        distance_to_nearest_tss = batch["distance_to_nearest_tss"]
+
+        logits = self(alt_input_ids, ref_input_ids, variant_index, tissue_embed)
+
+        # Predictions for AUROC
+        preds = torch.argmax(logits, dim=1).detach().cpu().numpy()
+        labels_np = labels.cpu().numpy()
+
+        for i, (min_dist, max_dist) in enumerate(DIST_TO_TSS):
+            mask = ((distance_to_nearest_tss >= min_dist) & (distance_to_nearest_tss < max_dist)).cpu().numpy()
+            filtered_preds = preds[mask]
+            filtered_labels = labels_np[mask]
+
+            if len(filtered_labels) > 0:
+                self.validation_step_labels[i].extend(filtered_labels)
+                self.validation_step_preds[i].extend(filtered_preds)
+
     def on_validation_epoch_end(self):
+        # Initialize lists to store all labels and predictions across all TSS distance buckets
+        all_labels = []
+        all_preds = []
+
         for i, (min_dist, max_dist) in enumerate(DIST_TO_TSS):
             if len(self.validation_step_labels[i]) > 0:
                 val_auroc = roc_auc_score(self.validation_step_labels[i], self.validation_step_preds[i])
@@ -270,8 +298,64 @@ class LitVEPFinetuning(pl.LightningModule):
                 self.log(f'validation/TSS({min_dist}-{max_dist})/AUPRC', val_auprc, on_epoch=True, sync_dist=True)
                 print(f'Bucket {i} [{min_dist}-{max_dist}] - AUROC: {val_auroc:.4f}')
 
+                # Aggregate the labels and predictions
+                all_labels.extend(self.validation_step_labels[i])
+                all_preds.extend(self.validation_step_preds[i])
+
             self.validation_step_labels[i].clear()
             self.validation_step_preds[i].clear()
+            
+        # Compute overall metrics if there are any labels
+        if all_labels:
+            overall_auroc = roc_auc_score(all_labels, all_preds)
+            precision, recall, _ = precision_recall_curve(all_labels, all_preds)
+            overall_auprc = auc(recall, precision)
+            overall_accuracy = accuracy_score(all_labels, all_preds)
+
+            # Log overall metrics
+            self.log('validation/overall/AUROC', overall_auroc, on_epoch=True, sync_dist=True)
+            self.log('validation/overall/Accuracy', overall_accuracy, on_epoch=True, sync_dist=True)
+            self.log('validation/overall/AUPRC', overall_auprc, on_epoch=True, sync_dist=True)
+            print(f'Overall - AUROC: {overall_auroc:.4f}')
+    
+
+    def on_test_epoch_end(self):
+        # Initialize lists to store all labels and predictions across all TSS distance buckets
+        all_labels = []
+        all_preds = []
+
+        for i, (min_dist, max_dist) in enumerate(DIST_TO_TSS):
+            if len(self.validation_step_labels[i]) > 0:
+                val_auroc = roc_auc_score(self.validation_step_labels[i], self.validation_step_preds[i])
+                precision, recall, _ = precision_recall_curve(self.validation_step_labels[i], self.validation_step_preds[i])
+                val_auprc = auc(recall, precision)
+                val_accuracy = accuracy_score(self.validation_step_labels[i], self.validation_step_preds[i])
+
+                # Log metrics for each TSS distance bucket
+                self.log(f'test/TSS({min_dist}-{max_dist})/AUROC', val_auroc, on_epoch=True, sync_dist=True)
+                self.log(f'test/TSS({min_dist}-{max_dist})/Accuracy', val_accuracy, on_epoch=True, sync_dist=True)
+                self.log(f'test/TSS({min_dist}-{max_dist})/AUPRC', val_auprc, on_epoch=True, sync_dist=True)
+                print(f'Bucket {i} [{min_dist}-{max_dist}] - AUROC: {val_auroc:.4f}')
+
+                # Aggregate the labels and predictions
+                all_labels.extend(self.validation_step_labels[i])
+                all_preds.extend(self.validation_step_preds[i])
+
+            self.validation_step_labels[i].clear()
+            self.validation_step_preds[i].clear()
+            
+        # Compute overall metrics if there are any labels
+        if all_labels:
+            overall_auroc = roc_auc_score(all_labels, all_preds)
+            precision, recall, _ = precision_recall_curve(all_labels, all_preds)
+            overall_auprc = auc(recall, precision)
+            overall_accuracy = accuracy_score(all_labels, all_preds)
+
+            # Log overall metrics
+            self.log('test/overall/AUROC', overall_auroc, on_epoch=True, sync_dist=True)
+            self.log('test/overall/Accuracy', overall_accuracy, on_epoch=True, sync_dist=True)
+            self.log('test/overall/AUPRC', overall_auprc, on_epoch=True, sync_dist=True)
+            print(f'Overall - AUROC: {overall_auroc:.4f}')
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
@@ -316,8 +400,7 @@ class VariantEffectPredictionDataModule(pl.LightningDataModule):
         self.dataset = load_from_disk(self._get_preprocessed_cache_file())
 
         # Split the dataset into train and validation sets
-        self.train_dataset = self.dataset["train"]
-        self.val_dataset = self.dataset["test"]
+        self.test_dataset = self.dataset["test"]
 
     def train_dataloader(self):
         return DataLoader(
@@ -338,6 +421,30 @@ class VariantEffectPredictionDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=False
         )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.test_batch_size,
+            collate_fn=DefaultDataCollator(return_tensors="pt"),
+            num_workers=self.num_workers,
+            pin_memory=True,
+            shuffle=False
+        )
+    
+    def _split_dataset(self,selected_validation_chromosome):
+        log.warning(f"SPLITTING THE DATASET INTO TRAIN AND VAL SET, VAL SET BEING CHROMOSOME {selected_validation_chromosome}")
+        self.train_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            != selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.val_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            == selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.validation_chromosome = selected_validation_chromosome
 
     def _get_preprocessed_cache_file(self):
         cache_dir = osp.join(
@@ -400,49 +507,54 @@ def finetune(args):
         args: Command line arguments or configuration dictionary.
     """
     wandb.login(key=args.wandb_api_key)
-    wandb_logger = WandbLogger(
-        name=f"{args.name}-{args.seq_len}",
-        project="Variant Effect Prediction Causal eQTL",
-        log_model=True  # Automatically log model checkpoints
-    )
     data_module = VariantEffectPredictionDataModule(args)
     data_module.setup()
 
-    model = LitVEPFinetuning(args)
+    np.random.seed(0)
+    candidates = np.unique(data_module.dataset["train"]["chromosome"])
+    held_chromosomes = np.random.choice(candidates,5,replace = False)
 
-    early_stopping_callback = EarlyStopping(
-        monitor="val_loss",
-        patience=args.patience,
-        verbose=True,
-        mode="min"
-    )
+    for idx,val_chromosome in enumerate(held_chromosomes):
 
-    checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
-        filename="best-checkpoint",
-        save_top_k=1,
-        verbose=True,
-        monitor="val_loss",
-        mode="min"
-    )
+        wandb_logger = WandbLogger(
+            name=f"{args.name_wb}-{args.seq_len}-fold-{idx+1}",
+            project="Variant Effect Prediction Causal eQTL",
+            log_model=True  # Automatically log model checkpoints
+        )
 
-    nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+        data_module._split_dataset(val_chromosome)
+        model = LitVEPFinetuning(args)
 
-    # Set up the PyTorch Lightning Trainer
-    trainer = pl.Trainer(
-        max_epochs=args.num_epochs,
-        devices=nb_device,
-        logger=wandb_logger,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1,
-        limit_train_batches=args.train_ratio,
-        limit_val_batches=args.eval_ratio,
-        val_check_interval=args.log_interval,
-        gradient_clip_val=1.0,
-        precision=args.precision,
-        accumulate_grad_batches=args.accumulate_grad_batches,
-        num_sanity_val_steps=0
-    )
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=f"{args.save_dir}/checkpoints",
+            filename=f"best-checkpoint-on-chromosome{val_chromosome}",
+            save_top_k=1,
+            verbose=True,
+            monitor="val_loss",
+            mode="min"
+        )
 
-    # Start the training process
-    trainer.fit(model, data_module)
+        nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+
+        # Set up the PyTorch Lightning Trainer
+        trainer = pl.Trainer(
+            max_epochs=args.num_epochs,
+            devices=nb_device,
+            logger=wandb_logger,
+            callbacks=[checkpoint_callback],
+            log_every_n_steps=1,
+            limit_train_batches=args.train_ratio,
+            limit_val_batches=args.eval_ratio,
+            val_check_interval=args.log_interval,
+            gradient_clip_val=1.0,
+            precision=args.precision,
+            accumulate_grad_batches=args.accumulate_grad_batches,
+            num_sanity_val_steps=0
+        )
+
+        # Start the training process
+        trainer.fit(model, data_module)
+        trainer.test(model,data_module,ckpt_path=f"./{args.save_dir}/checkpoints/best-checkpoint-on-chromosome{val_chromosome}.ckpt")
+
+        # Finish the current WandB run
+        wandb.finish()

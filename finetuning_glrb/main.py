@@ -87,8 +87,6 @@ if __name__ == "__main__":
     parser.add_argument("--accumulate_grad_batches", type=int, default=1, help="Accumulate gradients")
     parser.add_argument("--learning_rate", type=float, default=1e-4, 
                         help="Learning rate for optimizer")
-    parser.add_argument("--patience", type=int, default=10, 
-                        help="Number of epochs with no improvement after which training will be stopped")
     parser.add_argument("--log_interval", type=int, default=5, 
                         help="Log interval")
     parser.add_argument("--train_ratio", type=float, default=1.0, 

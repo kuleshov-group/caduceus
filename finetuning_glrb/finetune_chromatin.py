@@ -4,6 +4,7 @@ from os import path as osp
 import re
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.utils.data import DataLoader
 import wandb
 import lightning.pytorch as pl
@@ -57,7 +58,7 @@ def recast_chromosome(examples):
         dict with chromosome recast as integers.
     """
     return {
-        "chromosome": -1 if examples["chromosome"] == "X" else -2 if examples["chromosome"] == "Y" else int(examples["chromosome"])
+        "chromosome": -1 if examples["chromosome"] in ["X","Y"] else int(examples["chromosome"])
     }
 
 class MLP_ChromatineFeatures(nn.Module):
@@ -193,6 +194,17 @@ class Lit_ChromatinFeatures(pl.LightningModule):
         self.validation_step_labels.extend(labels.detach().flatten().cpu().numpy())
 
         return loss
+    
+    def test_step(self, batch, batch_idx):
+        ref_input_ids = batch["ref_input_ids"]
+        labels = batch["labels"].float()
+
+        logits = self(ref_input_ids)
+
+        # Track predictions and labels for accuracy and F1 score
+        preds = (torch.sigmoid(logits) > 0.5).float()  # Get predicted class labels
+        self.validation_step_preds.extend(preds.detach().flatten().cpu().numpy())
+        self.validation_step_labels.extend(labels.detach().flatten().cpu().numpy())
 
     def on_validation_epoch_end(self):
         # Calculate accuracy, AUPRC, and AUROC for validation
@@ -205,6 +217,21 @@ class Lit_ChromatinFeatures(pl.LightningModule):
         self.log("validation/accuracy", val_accuracy, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         self.log("validation/AUPRC", val_auprc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         self.log("validation/AUROC", val_auroc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+
+        self.validation_step_labels.clear()
+        self.validation_step_preds.clear()
+    
+    def on_test_epoch_end(self):
+        # Calculate accuracy, AUPRC, and AUROC for validation
+        val_accuracy = accuracy_score(self.validation_step_labels, self.validation_step_preds)
+        precision, recall, _ = precision_recall_curve(self.validation_step_labels, self.validation_step_preds)
+        val_auprc = auc(recall, precision)
+        val_auroc = roc_auc_score(self.validation_step_labels, self.validation_step_preds)
+
+        # Log validation metrics
+        self.log("test/accuracy", val_accuracy, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("test/AUPRC", val_auprc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("test/AUROC", val_auroc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         self.validation_step_labels.clear()
         self.validation_step_preds.clear()
@@ -267,8 +294,7 @@ class HistoneMarksDataModule(pl.LightningDataModule):
         self.dataset = load_from_disk(self._get_preprocessed_cache_file())
 
         # Split the dataset into train and validation sets
-        self.train_dataset = self.dataset["train"]
-        self.val_dataset = self.dataset["test"]
+        self.test_dataset = self.dataset["test"]
 
     def train_dataloader(self):
         return DataLoader(
@@ -289,6 +315,30 @@ class HistoneMarksDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=False
         )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.test_batch_size,
+            collate_fn=DefaultDataCollator(return_tensors="pt"),
+            num_workers=self.num_workers,
+            pin_memory=True,
+            shuffle=False
+        )
+    
+    def _split_dataset(self,selected_validation_chromosome):
+        log.warning(f"SPLITTING THE DATASET INTO TRAIN AND VAL SET, VAL SET BEING CHROMOSOME {selected_validation_chromosome}")
+        self.train_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            != selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.val_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            == selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.validation_chromosome = selected_validation_chromosome
 
     def _get_preprocessed_cache_file(self):
         self.cache_dir = osp.join(
@@ -376,8 +426,8 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
         self.dataset = load_from_disk(self._get_preprocessed_cache_file())
 
         # Split the dataset into train and validation sets
-        self.train_dataset = self.dataset["train"]
-        self.val_dataset = self.dataset["test"]
+        self.test_dataset = self.dataset["test"]
+
 
     def train_dataloader(self):
         return DataLoader(
@@ -398,6 +448,30 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=False
         )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.test_batch_size,
+            collate_fn=DefaultDataCollator(return_tensors="pt"),
+            num_workers=self.num_workers,
+            pin_memory=True,
+            shuffle=False
+        )
+    
+    def _split_dataset(self,selected_validation_chromosome):
+        log.warning(f"SPLITTING THE DATASET INTO TRAIN AND VAL SET, VAL SET BEING CHROMOSOME {selected_validation_chromosome}")
+        self.train_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            != selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.val_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            == selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.validation_chromosome = selected_validation_chromosome
 
     def _get_preprocessed_cache_file(self):
         self.cache_dir = osp.join(
@@ -445,6 +519,7 @@ class DNAAccessibilityDataModule(pl.LightningDataModule):
         dataset.save_to_disk(self._get_preprocessed_cache_file())
         log.warning("Data downloaded and preprocessed successfully.")
 
+
 def finetune_histone_marks(args):
     """
     Main function to start finetuning on Histone Marks with PyTorch Lightning.
@@ -453,53 +528,57 @@ def finetune_histone_marks(args):
         args: Command line arguments or configuration dictionary.
     """
     wandb.login(key=args.wandb_api_key)
-    wandb_logger = WandbLogger(
-        name=f"{args.name_wb}-{args.seq_len}",
-        project="Histone Marks",
-        log_model=True  # Automatically log model checkpoints
-    )
     data_module = HistoneMarksDataModule(args)
     data_module.setup()
 
-    model = Lit_ChromatinFeatures(args)
+    np.random.seed(0)
+    candidates = np.unique(data_module.dataset["train"]["chromosome"])
+    held_chromosomes = np.random.choice(candidates,5,replace = False)
 
-    # Callbacks for early stopping and model checkpointing
-    early_stopping_callback = EarlyStopping(
-        monitor="val_loss",
-        patience=args.patience,
-        verbose=True,
-        mode="min"
+    for idx,val_chromosome in enumerate(held_chromosomes):
+        wandb_logger = WandbLogger(
+        name=f"{args.name_wb}-{args.seq_len}-fold-{idx+1}",
+        project="Histone Marks",
+        log_model=True  # Automatically log model checkpoints
     )
+        data_module._split_dataset(val_chromosome)
 
-    checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
-        filename="best-checkpoint",
-        save_top_k=1,
-        verbose=True,
-        monitor="val_loss",
-        mode="min"
-    )
+        model = Lit_ChromatinFeatures(args)
 
-    nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
 
-    # Set up the PyTorch Lightning Trainer
-    trainer = pl.Trainer(
-        max_epochs=args.num_epochs,
-        devices=nb_device,
-        logger=wandb_logger,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1,
-        limit_train_batches=args.train_ratio,
-        limit_val_batches=args.eval_ratio,
-        val_check_interval=args.log_interval,
-        gradient_clip_val=1.0,
-        precision=args.precision,
-        accumulate_grad_batches=args.accumulate_grad_batches,
-        num_sanity_val_steps=0
-    )
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=f"{args.save_dir}/checkpoints",
+            filename=f"best-checkpoint-on-chromosome{val_chromosome}",
+            save_top_k=1,
+            verbose=True,
+            monitor="val_loss",
+            mode="min"
+        )
 
-    # Start the training process
-    trainer.fit(model, data_module)
+        nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+
+        # Set up the PyTorch Lightning Trainer
+        trainer = pl.Trainer(
+            max_epochs=args.num_epochs,
+            devices=nb_device,
+            logger=wandb_logger,
+            callbacks=[checkpoint_callback],
+            log_every_n_steps=1,
+            limit_train_batches=args.train_ratio,
+            limit_val_batches=args.eval_ratio,
+            val_check_interval=args.log_interval,
+            gradient_clip_val=1.0,
+            precision=args.precision,
+            accumulate_grad_batches=args.accumulate_grad_batches,
+            num_sanity_val_steps=0
+        )
+
+        # Start the training process
+        trainer.fit(model, data_module)
+        trainer.test(model,data_module,ckpt_path=f"./{args.save_dir}/checkpoints/best-checkpoint-on-chromosome{val_chromosome}.ckpt")
+
+        # Finish the current WandB run
+        wandb.finish()
 
 def finetune_dna_accessibility(args):
     """
@@ -509,50 +588,55 @@ def finetune_dna_accessibility(args):
         args: Command line arguments or configuration dictionary.
     """
     wandb.login(key=args.wandb_api_key)
-    wandb_logger = WandbLogger(
-        name=f"{args.name_wb}-{args.seq_len}",
-        project="DNA Accessibility",
-        log_model=True  # Automatically log model checkpoints
-    )
     data_module = DNAAccessibilityDataModule(args)
     data_module.setup()
+    np.random.seed(0)
+    candidates = np.unique(data_module.dataset["train"]["chromosome"])
+    held_chromosomes = np.random.choice(candidates,5,replace = False)
 
-    model = Lit_ChromatinFeatures(args)
+    for idx,val_chromosome in enumerate(held_chromosomes):
 
-    # Callbacks for early stopping and model checkpointing
-    early_stopping_callback = EarlyStopping(
-        monitor="val_loss",
-        patience=args.patience,
-        verbose=True,
-        mode="min"
-    )
+        wandb_logger = WandbLogger(
+            name=f"{args.name_wb}-{args.seq_len}-fold-{idx+1}",
+            project="DNA Accessibility",
+            log_model=True  # Automatically log model checkpoints
+        )
 
-    checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
-        filename="best-checkpoint",
-        save_top_k=1,
-        verbose=True,
-        monitor="val_loss",
-        mode="min"
-    )
+        data_module._split_dataset(val_chromosome)
 
-    nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
 
-    # Set up the PyTorch Lightning Trainer
-    trainer = pl.Trainer(
-        max_epochs=args.num_epochs,
-        devices=nb_device,
-        logger=wandb_logger,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1,
-        limit_train_batches=args.train_ratio,
-        limit_val_batches=args.eval_ratio,
-        val_check_interval=args.log_interval,
-        gradient_clip_val=1.0,
-        precision=args.precision,
-        accumulate_grad_batches=args.accumulate_grad_batches,
-        num_sanity_val_steps=0
-    )
+        model = Lit_ChromatinFeatures(args)
 
-    # Start the training process
-    trainer.fit(model, data_module)
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=f"{args.save_dir}/checkpoints",
+            filename=f"best-checkpoint-on-chromosome{val_chromosome}",
+            save_top_k=1,
+            verbose=True,
+            monitor="val_loss",
+            mode="min"
+        )
+
+        nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+
+        # Set up the PyTorch Lightning Trainer
+        trainer = pl.Trainer(
+            max_epochs=args.num_epochs,
+            devices=nb_device,
+            logger=wandb_logger,
+            callbacks=[checkpoint_callback],
+            log_every_n_steps=1,
+            limit_train_batches=args.train_ratio,
+            limit_val_batches=args.eval_ratio,
+            val_check_interval=args.log_interval,
+            gradient_clip_val=1.0,
+            precision=args.precision,
+            accumulate_grad_batches=args.accumulate_grad_batches,
+            num_sanity_val_steps=0
+        )
+
+        # Start the training process
+        trainer.fit(model, data_module)
+        trainer.test(model,data_module,ckpt_path=f"./{args.save_dir}/checkpoints/best-checkpoint-on-chromosome{val_chromosome}.ckpt")
+
+        # Finish the current WandB run
+        wandb.finish()

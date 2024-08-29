@@ -8,11 +8,11 @@ python finetuning_glrb/main.py \
     --name_wb "your_wandb_run_name" \
     --train_batch_size 4 \
     --test_batch_size 4 \
+    --rcps true \
     --num_workers 6 \
     --num_epochs 1 \
     --precision "16-mixed" \
     --learning_rate "3e-5" \
-    --patience 3 \
     --log_interval 512 \
     --accumulate_grad_batches 128 \
     --train_ratio 1.0 \

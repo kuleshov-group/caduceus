@@ -4,6 +4,7 @@ from os import path as osp
 import re
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoModel, AutoTokenizer, AutoConfig
 import wandb
@@ -62,7 +63,7 @@ def recast_chromosome(examples):
         dict with recast chromosome as an integer.
     """
     return {
-        "chromosome": -1 if examples["chromosome"] == "X" else -2 if examples["chromosome"] == "Y" else int(examples["chromosome"])
+        "chromosome": -1 if examples["chromosome"] in ["X","Y"] else int(examples["chromosome"])
     }
 
 def find_variant_idx(examples):
@@ -238,6 +239,24 @@ class Lit_OMIMFinetuning(pl.LightningModule):
         all_predictions = torch.softmax(logits, dim=1)[:, 1].detach().cpu().numpy()
         self.validation_step_preds.extend(all_predictions)
         self.validation_step_labels.extend(all_labels)
+    
+    def test_step(self, batch, batch_idx):
+        ref_input_ids = batch["ref_input_ids"]
+        alt_input_ids = batch["alt_input_ids"]
+        variant_index = batch["variant_idx"]
+        labels = batch["labels"]
+
+        logits = self(alt_input_ids, ref_input_ids, variant_index)
+        
+        preds = torch.argmax(logits, dim=1)
+        correct = (preds == labels).sum().item()
+        self.validation_step_correct += correct
+        self.validation_step_total += len(labels)
+
+        all_labels = labels.cpu().numpy()
+        all_predictions = torch.softmax(logits, dim=1)[:, 1].detach().cpu().numpy()
+        self.validation_step_preds.extend(all_predictions)
+        self.validation_step_labels.extend(all_labels)
 
     def on_validation_epoch_end(self):
         val_auroc = roc_auc_score(self.validation_step_labels, self.validation_step_preds)
@@ -249,6 +268,23 @@ class Lit_OMIMFinetuning(pl.LightningModule):
             "validation/AUROC": val_auroc,
             "validation/Accuracy": val_accuracy,
             "validation/AUPRC": val_auprc,
+        })
+
+        self.validation_step_labels.clear()
+        self.validation_step_preds.clear()
+        self.validation_step_correct = 0
+        self.validation_step_total = 0
+    
+    def on_test_epoch_end(self):
+        val_auroc = roc_auc_score(self.validation_step_labels, self.validation_step_preds)
+        precision, recall, _ = precision_recall_curve(self.validation_step_labels, self.validation_step_preds)
+        val_auprc = auc(recall, precision)
+        val_accuracy = self.validation_step_correct / self.validation_step_total
+
+        self.logger.experiment.log({
+            "test/AUROC": val_auroc,
+            "test/Accuracy": val_accuracy,
+            "test/AUPRC": val_auprc,
         })
 
         self.validation_step_labels.clear()
@@ -312,8 +348,8 @@ class VariantEffectPredictionDataModule(pl.LightningDataModule):
         self.prepare_data()
         self.dataset = load_from_disk(self._get_preprocessed_cache_file())
 
-        self.train_dataset = self.dataset["train"]
-        self.val_dataset = self.dataset["test"]
+        # Split the dataset into train and validation sets
+        self.test_dataset = self.dataset["test"]
 
     def train_dataloader(self):
         return DataLoader(
@@ -334,6 +370,30 @@ class VariantEffectPredictionDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=True
         )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.test_batch_size,
+            collate_fn=DefaultDataCollator(return_tensors="pt"),
+            num_workers=self.num_workers,
+            pin_memory=True,
+            shuffle=False
+        )
+    
+    def _split_dataset(self,selected_validation_chromosome):
+        log.warning(f"SPLITTING THE DATASET INTO TRAIN AND VAL SET, VAL SET BEING CHROMOSOME {selected_validation_chromosome}")
+        self.train_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            != selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.val_dataset = self.dataset["train"].filter(
+            lambda example: example["chromosome"]
+            == selected_validation_chromosome,
+            keep_in_memory=True,
+        )
+        self.validation_chromosome = selected_validation_chromosome
 
     def _get_preprocessed_cache_file(self):
         self.cache_dir = osp.join(
@@ -387,48 +447,53 @@ def finetune(args):
         args: Command line arguments or configuration dictionary.
     """
     wandb.login(key=args.wandb_api_key)
-    wandb_logger = WandbLogger(
-        name=f"{args.name}-{args.seq_len}",
-        project="Variant Effect Prediction OMIM",
-        log_model=True
-    )
     data_module = VariantEffectPredictionDataModule(args)
     data_module.setup()
 
-    model = Lit_OMIMFinetuning(args)
+    np.random.seed(0)
+    candidates = np.unique(data_module.dataset["train"]["chromosome"])
+    held_chromosomes = np.random.choice(candidates,5,replace = False)
 
-    early_stopping_callback = EarlyStopping(
-        monitor="val_loss",
-        patience=args.patience,
-        verbose=True,
-        mode="min"
-    )
+    for idx,val_chromosome in enumerate(held_chromosomes):
 
-    checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
-        filename="best-checkpoint",
-        save_top_k=1,
-        verbose=True,
-        monitor="val_loss",
-        mode="min"
-    )
+        wandb_logger = WandbLogger(
+            name=f"{args.name_wb}-{args.seq_len}-fold-{idx+1}",
+            project="Variant Effect Prediction OMIM",
+            log_model=True
+        )
 
-    nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+        data_module._split_dataset(val_chromosome)
+        model = Lit_OMIMFinetuning(args)
 
-    # Set up the PyTorch Lightning Trainer
-    trainer = pl.Trainer(
-        max_epochs=args.num_epochs,
-        devices=nb_device,
-        logger=wandb_logger,
-        callbacks=[early_stopping_callback, checkpoint_callback],
-        log_every_n_steps=1,
-        limit_train_batches=args.train_ratio,
-        limit_val_batches=args.eval_ratio,
-        val_check_interval=args.log_interval,
-        gradient_clip_val=1.0,
-        precision=args.precision,
-        accumulate_grad_batches=args.accumulate_grad_batches,
-        num_sanity_val_steps=0
-    )
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=f"{args.save_dir}/checkpoints",
+            filename=f"best-checkpoint-on-chromosome{val_chromosome}",
+            save_top_k=1,
+            verbose=True,
+            monitor="val_loss",
+            mode="min"
+        )
 
-    trainer.fit(model, data_module)
+        nb_device = "1" if "nucleotide-transformer" in args.model_name.lower() else "auto"
+
+        # Set up the PyTorch Lightning Trainer
+        trainer = pl.Trainer(
+            max_epochs=args.num_epochs,
+            devices=nb_device,
+            logger=wandb_logger,
+            callbacks=[checkpoint_callback],
+            log_every_n_steps=1,
+            limit_train_batches=args.train_ratio,
+            limit_val_batches=args.eval_ratio,
+            val_check_interval=args.log_interval,
+            gradient_clip_val=1.0,
+            precision=args.precision,
+            accumulate_grad_batches=args.accumulate_grad_batches,
+            num_sanity_val_steps=0
+        )
+
+        trainer.fit(model, data_module)
+        trainer.test(model,data_module,ckpt_path=f"./{args.save_dir}/checkpoints/best-checkpoint-on-chromosome{val_chromosome}.ckpt")
+
+        # Finish the current WandB run
+        wandb.finish()
