@@ -1,7 +1,7 @@
 ## NOTE: This is a repository forked from the original Caduceus which is located at https://github.com/kuleshov-group/caduceus
 
 I have made the following modifications to the original code:
- - Modified slurm scripts to work on University of Utah notchpeak system with 4-8 A6000
+ - Modified slurm scripts to work on University of Utah notchpeak system with 8 Nvidia A6000 GPUs
  - Added GUE benchmark
  - Added Phage Detection Genomic Benchmark (PD-GB)
  - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38)
