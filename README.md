@@ -3,9 +3,15 @@
 I have made the following modifications to the original code:
  - Modified slurm scripts to work on University of Utah notchpeak system with 4-8 A6000
  - Added GUE benchmark
- - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38
  - Added Phage Detection Genomic Benchmark (PD-GB)
+ - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38)
  - Modifications to train on a generic fasta file and bed file instead of only human-sequences
+
+If you use any of these modifications in your code, please cite:
+   
+A Comparison of Tokenization Impact in Attention Based and State Space Genomic Language Models
+LeAnn M Lindsey, Nicole L Pershing, Anisa Habib, W. Zac Stephens, Anne J Blaschke, Hari Sundar
+bioRxiv 2024.09.09.612081; doi: https://doi.org/10.1101/2024.09.09.612081
 
 
 # Caduceus &#9764;: Bi-Directional Equivariant Long-Range DNA Sequence Modeling
