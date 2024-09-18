@@ -1,6 +1,11 @@
-<p align="center">
-    <img src="assets/Caduceus_image.png" alt="Caduceus" width="200"/>
-</p>
+# NOTE: This is a repository forked from the original Caduceus which is located at https://github.com/kuleshov-group/caduceus
+
+I have made the following modifications to this code:
+ - Modified slurm scripts to work on University of Utah notchpeak system with 4-8 A6000
+ - Added GUE benchmark
+ - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38
+ - Added Phage Detection Genomic Benchmark (PD-GB)
+ - Modifications to train on a generic fasta file and bed file instead of only human-sequences
 
 
 # Caduceus &#9764;: Bi-Directional Equivariant Long-Range DNA Sequence Modeling
