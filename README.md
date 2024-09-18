@@ -1,6 +1,6 @@
-# NOTE: This is a repository forked from the original Caduceus which is located at https://github.com/kuleshov-group/caduceus
+## NOTE: This is a repository forked from the original Caduceus which is located at https://github.com/kuleshov-group/caduceus
 
-I have made the following modifications to this code:
+I have made the following modifications to the original code:
  - Modified slurm scripts to work on University of Utah notchpeak system with 4-8 A6000
  - Added GUE benchmark
  - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38
