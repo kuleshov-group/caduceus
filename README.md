@@ -5,7 +5,7 @@ I have made the following modifications to the original code:
  - Added GUE benchmark
  - Added Phage Detection Genomic Benchmark (PD-GB)
  - Workaround for an error in the MCC calculations in unbalanced test sets (see my reported issue here: https://github.com/kuleshov-group/caduceus/issues/38)
- - Modifications to train on a generic fasta file and bed file instead of only human-sequences
+ - Modifications to train on a generic fasta file and bed file instead of only Hg38 (human sequences)
 
 If you use any of these modifications in your code, please cite:
    
