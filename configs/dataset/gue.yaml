@@ -1,0 +1,253 @@
+_name_: gue  # this links to the overall SequenceDataset of all nucleotide transformer datasets
+train_val_split_seed: ${train.seed}  # Used for train/validation splitting
+dataset_name: enhancers  # this specifies which dataset in nuc trx
+dest_path: null  # path to overall nuc trx datasets
+max_length: ${.${.dataset_name}.max_length}
+d_output: ${.${.dataset_name}.classes} 
+use_padding: True
+padding_side: left
+add_eos: False
+batch_size: 256
+train_len: ${.${.dataset_name}.train_len}
+__l_max: ${.max_length}
+shuffle: true  # set this as default!
+metric: ${.${.dataset_name}.metric}
+# these are used to find the right attributes automatically for each dataset
+emp_H3:
+  train_len: 11971
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K14ac:
+  train_len: 26438
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K36me3:
+  train_len: 27904
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K4me1:
+  train_len: 25341
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K4me2:
+  train_len: 24545
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K4me3:
+  train_len: 29439
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K79me3:
+  train_len: 23069
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H3K9ac:
+  train_len: 22224
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H4:
+  train_len: 11679
+  classes: 2
+  max_length: 500
+  metric: accuracy
+emp_H4ac:
+  train_len: 27275
+  classes: 2
+  max_length: 500
+  metric: accuracy
+human_tf_0:
+  train_len: 32378
+  classes: 2
+  max_length: 101
+  metric: accuracy
+human_tf_1:
+  train_len: 30672
+  classes: 2
+  max_length: 101
+  metric: accuracy
+human_tf_2:
+  train_len: 19000
+  classes: 2
+  max_length: 101
+  metric: accuracy
+human_tf_3:
+  train_len: 27294
+  classes: 2
+  max_length: 101
+  metric: accuracy
+human_tf_4:
+  train_len: 19000
+  classes: 2
+  max_length: 101
+  metric: accuracy
+mouse_0:
+  train_len: 6478
+  classes: 2
+  max_length: 101
+  metric: accuracy
+mouse_1:
+  train_len: 6478
+  classes: 2
+  max_length: 101
+  metric: accuracy
+mouse_2:
+  train_len:  53952
+  classes: 3
+  max_length: 101
+  metric: accuracy
+mouse_3:
+  train_len: 1904
+  classes: 2
+  max_length: 101
+  metric: accuracy
+mouse_4:
+  train_len: 15064
+  classes: 2
+  max_length: 101
+  metric: accuracy
+prom_300_all: 
+  train_len: 47356
+  classes: 2
+  max_length: 300
+  metric: accuracy
+prom_300_tata:
+  train_len: 4904
+  classes: 2
+  max_length: 300
+  metric: accuracy
+prom_300_notata:
+  train_len: 42452
+  classes: 2
+  max_length: 300
+  metric: accuracy
+prom_core_all: 
+  train_len: 47356
+  classes: 2
+  max_length: 300
+  metric: accuracy
+prom_core_tata:
+  train_len: 4904
+  classes: 2
+  max_length: 300
+  metric: accuracy
+prom_core_notata:
+  train_len: 42452
+  classes: 2
+  max_length: 300
+  metric: accuracy
+splice_reconstructed:
+  train_len: 36496
+  classes: 3
+  max_length: 400
+  metric: accuracy
+virus_covid:
+  train_len: 73335
+  classes: 9
+  max_length: 999
+  metric: accuracy
+virus_species_40:
+  train_len: 4000
+  classes: 24
+  max_length: 5000
+  metric: accuracy
+fungi_species_20:
+  train_len: 8000
+  classes: 20
+  max_length: 10000
+  metric: accuracy
+EPI_K562:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+EPI_HeLa-S3:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+EPI_NHEK:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+EPI_IMR90:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+EPI_HUVEC:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+EPI_GM1287:
+  train_len: 10000
+  classes: 2
+  max_length: 5001
+  metric: accuracy
+
+
+#Dataset Name, Labels, Classes, Max_length, Train, Test, Dev, Total
+#emp_H3,{0, 1},2,500,11971,1497,1497,14965
+
+#emp_H3K14ac,{0, 1},2,500,26438,3305,3305,33048
+
+#emp_H3K36me3,{0, 1},2,500,27904,3488,3488,34880
+
+#emp_H3K4me1,{0, 1},2,500,25341,3168,3168,31677
+
+#emp_H3K4me2,{0, 1},2,500,24545,3069,3069,30683
+
+#emp_H3K4me3,{0, 1},2,500,29439,3680,3680,36799
+
+#emp_H3K79me3,{0, 1},2,500,23069,2884,2884,28837
+
+#emp_H3K9ac,{0, 1},2,500,22224,2779,2779,27782
+
+#emp_H4,{0, 1},2,500,11679,1461,1461,14601
+
+#emp_H4ac,{0, 1},2,500,27275,3410,3410,34095
+
+#human_tf_0,{0, 1},2,101,32378,1000,1000,34378
+
+#human_tf_1,{0, 1},2,101,30672,1000,1000,32672
+
+#human_tf_2,{0, 1},2,101,19000,1000,1000,21000
+
+#human_tf_3,{0, 1},2,101,27294,1000,1000,29294
+
+#human_tf_4,{0, 1},2,101,19000,1000,1000,21000
+
+#mouse_0,{0, 1},2,101,6478,810,810,8098
+
+#mouse_1,{0, 1},2,101,53952,6745,6745,67442
+
+#mouse_2,{0, 1},2,101,2620,328,328,3276
+
+#mouse_3,{0, 1},2,101,1904,239,239,2382
+
+#mouse_4,{0, 1},2,101,15064,1883,1883,18830
+
+#prom_300_all,{0, 1},2,300,47356,5920,5920,59196
+
+#prom_300_notata,{0, 1},2,300,42452,5307,5307,53066
+
+#prom_300_tata,{0, 1},2,300,4904,613,613,6130
+
+#prom_core_all,{0, 1},2,70,47356,5920,5920,59196
+
+#prom_core_notata,{0, 1},2,70,42452,5307,5307,53066
+
+#prom_core_tata,{0, 1},2,70,4904,613,613,6130
+
+#splice_reconstructed,{0, 1, 2},3,400,36496,4562,4562,45620
+
+#virus_covid,{0, 1, 2, 3, 4, 5, 6, 7, 8},9,999,73335,9168,9166,91669

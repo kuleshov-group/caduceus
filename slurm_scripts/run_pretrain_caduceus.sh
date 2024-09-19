@@ -1,39 +1,47 @@
 #!/bin/bash
 #SBATCH --get-user-env                      # Retrieve the users login environment
-#SBATCH -t 96:00:00                         # Time limit (hh:mm:ss)
-#SBATCH --mem=100G                          # RAM
-#SBATCH --gres=gpu:8                        # Number of GPUs
+#SBATCH --account=soc-gpu-np
+#SBATCH --partition=soc-gpu-np
+#SBATCH -t 12:00:00                          # Time limit (hh:mm:ss)
+#SBATCH --mem=0                             # RAM
+#SBATCH --gres=gpu:a6000:8                  # Number of GPUs
 #SBATCH --ntasks-per-node=8                 # Should correspond to num devices (at least 1-1 task to GPU)
 ##SBATCH --cpus-per-task=4                  # Number of CPU cores per task
 #SBATCH -N 1                                # Number of nodes
 #SBATCH --requeue                           # Requeue job if it fails
-#SBATCH --job-name=caduceus_ps              # Job name
-#SBATCH --output=../watch_folder/%x_%j.log  # Log file
+#SBATCH --job-name=bakterion-caduceus_ps              # Job name
+#SBATCH --output=../watch_folder/bakterion%x_%j.log  # Log file
 #SBATCH --open-mode=append                  # Do not overwrite logs
 
+module load cuda
+nvidia-smi
+source activate CADUCEUS_3
+
+echo "TIME: Start: = `date +"%Y-%m-%d %T"`"
+
 # Setup environment
-cd ../ || exit  # Go to the root directory of the repo
-source setup_env.sh
+#cd ../ || exit  # Go to the root directory of the repo
+#source setup_env.sh
+cd /uufs/chpc.utah.edu/common/home/u1323098/sundar-group-space2/PHAGE_FINAL_PAPER/MODELS/BACTERIA_TRAINED/caduceus
 export HYDRA_FULL_ERROR=1
 
 NUM_DEVICES=8
 
 # Run script
-SEQLEN=131072
-MAX_STEPS=50000
+SEQLEN=4096
+MAX_STEPS=40000
 D_MODEL=256
-N_LAYER=8
-LR="8e-3"
+N_LAYER=4
+LR="8e-4"
 BIDIRECTIONAL_STRATEGY="add"
 BIDIRECTIONAL_WEIGHT_TIE="true"
 RCPS="true"
 RC_AUG="false"
 
-BATCH_SIZE=$(( 1048576 / SEQLEN ))
+BATCH_SIZE=$(( 1048576 / (SEQLEN*2) ))
 SEQLEN_DIS="$(echo "scale=0; ${SEQLEN} / 1000" | bc)k"
-WANDB_NAME="caduceus-ps_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
+WANDB_NAME="debug-bakterion-caduceus_ps_seqlen-${SEQLEN_DIS}_d_model-${D_MODEL}_n_layer-${N_LAYER}_lr-${LR}"
 HYDRA_RUN_DIR="./outputs/pretrain/hg38/${WANDB_NAME}"
-
 mkdir -p "${HYDRA_RUN_DIR}"
 srun python -m train \
   experiment=hg38/hg38 \
