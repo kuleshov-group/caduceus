@@ -18,6 +18,8 @@ import src.utils.train
 from src.dataloaders.base import SequenceDataset, default_data_path
 from src.dataloaders.datasets.genomic_bench_dataset import GenomicBenchmarkDataset
 from src.dataloaders.datasets.hg38_char_tokenizer import CharacterTokenizer
+from src.dataloaders.datasets.phage_dataset import PhageDataset
+from src.dataloaders.datasets.gue_dataset import GueDataset
 from src.dataloaders.datasets.hg38_dataset import HG38Dataset
 from src.dataloaders.datasets.nucleotide_transformer_dataset import NucleotideTransformerDataset
 from src.dataloaders.fault_tolerant_sampler import FaultTolerantDistributedSampler
