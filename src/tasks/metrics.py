@@ -197,8 +197,13 @@ def accuracy(logits, y):
         # Mixup leads to this case: use argmax class
         y = y.argmax(dim=-1)
     y = y.view(-1)
+    #return torch.eq(preds, y).float().mean()
+    print("\n***************************PRINTING FROM ACCURACY Y, Y_HAT, CONFUSION_MATRIX*********************")
+    print(y)
+    print(preds)
+    print("*************************************************************************************************")
+    #return matthews_corrcoef(y.cpu().numpy(), preds.cpu().numpy())
     return torch.eq(preds, y).float().mean()
-
 
 def accuracy_ignore_index(logits, y, ignore_index=-100):
     num_classes = logits.shape[-1]
