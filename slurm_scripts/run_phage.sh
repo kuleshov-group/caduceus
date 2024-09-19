@@ -9,13 +9,13 @@
 #SBATCH -N 1                             # Number of nodes
 #SBATCH --requeue                        # Requeue job if it fails
 #SBATCH --open-mode=append               # Do not overwrite logs
-#SBATCH --output=../watch_folder/gue_%j.log  # Log file
+#SBATCH --output=../watch_folder/phage_%j.log  # Log file
 
 # Setup environment
 module load cuda
 nvidia-smi
 source activate CADUCEUS_3
-cd /uufs/chpc.utah.edu/common/home/u1323098/sundar-group-space2/PHAGE_FINAL_PAPER/MODELS/TEST_BED/caduceus
+cd /uufs/chpc.utah.edu/common/home/u1323098/sundar-group-space2/PHAGE_FINAL_PAPER/MODELS/BACTERIA_TRAINED/caduceus
 # Expected args:
 # - CONFIG_PATH
 # - PRETRAINED_PATH
@@ -35,13 +35,13 @@ cd /uufs/chpc.utah.edu/common/home/u1323098/sundar-group-space2/PHAGE_FINAL_PAPE
 WANDB_NAME="${DISPLAY_NAME}_lr-${LR}_batch_size-${BATCH_SIZE}_rc_aug-${RC_AUG}"
 for seed in $(seq 1 10); do
   # shellcheck disable=SC2154
-  HYDRA_RUN_DIR="./outputs/downstream/gue_cv10/${TASK}/${WANDB_NAME}/seed-${seed}"
+  HYDRA_RUN_DIR="./outputs/downstream/phage_cv10/${TASK}/${WANDB_NAME}/seed-${seed}"
   mkdir -p "${HYDRA_RUN_DIR}"
   echo "*****************************************************"
-  echo "Running GUE model: ${DISPLAY_NAME}, task: ${TASK}, lr: ${LR}, batch_size: ${BATCH_SIZE}, rc_aug: ${RC_AUG}, SEED: ${seed}"
+  echo "Running PHAGE model: ${DISPLAY_NAME}, task: ${TASK}, lr: ${LR}, batch_size: ${BATCH_SIZE}, rc_aug: ${RC_AUG}, SEED: ${seed}"
   # shellcheck disable=SC2086
   python -m train \
-    experiment=hg38/gue \
+    experiment=hg38/phage \
     callbacks.model_checkpoint_every_n_steps.every_n_train_steps=5000 \
     dataset.dataset_name="${TASK}" \
     dataset.train_val_split_seed=${seed} \
@@ -58,10 +58,10 @@ for seed in $(seq 1 10); do
     optimizer.lr="${LR}" \
     trainer.max_epochs=10 \
     train.pretrained_model_path="${PRETRAINED_PATH}" \
-    wandb.group="downstream/gue_cv10" \
+    wandb.group="downstream/phage_cv10" \
     wandb.job_type="${TASK}" \
     wandb.name="${WANDB_NAME}" \
-    wandb.id="gue_cv10_${TASK}_${WANDB_NAME}_seed-${seed}" \
+    wandb.id="phage_cv10_${TASK}_${WANDB_NAME}_seed-${seed}" \
     +wandb.tags=\["seed-${seed}"\] \
     hydra.run.dir="${HYDRA_RUN_DIR}"
   echo "*****************************************************"
