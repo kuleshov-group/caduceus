@@ -7,16 +7,22 @@ from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
-from mamba_ssm.modules.mamba_simple import Mamba, Block
+try:
+    from mamba_ssm.modules.mamba_simple import Block  # Legacy mambav1 file structure
+except ImportError:
+    from mamba_ssm.modules.block import Block  # mambav2 file structure
 from torch import nn
 from torch.nn import functional as F
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import BaseModelOutputWithNoAttention, MaskedLMOutput, SequenceClassifierOutput
 
 try:
-    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
+    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn  # Legacy mambav1 file structure
 except ImportError:
-    RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
+    try:
+        from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn  # mambav2 file structure
+    except ImportError:
+        RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 from .configuration_caduceus import CaduceusConfig
 from .modeling_rcps import RCPSAddNormWrapper, RCPSEmbedding, RCPSLMHead, RCPSMambaBlock
@@ -54,13 +60,24 @@ def create_block(
         nn.LayerNorm if not rms_norm else RMSNorm, eps=norm_epsilon, **factory_kwargs
     )
     block_cls = RCPSMambaBlock if rcps else Block
-    block = block_cls(
-        d_model,
-        mixer_cls,
-        norm_cls=norm_cls,
-        fused_add_norm=fused_add_norm,
-        residual_in_fp32=residual_in_fp32,
-    )
+    # mambav2 compatibility
+    if "mlp_cls" in inspect.signature(block_cls.__init__).parameters:
+        block = block_cls(
+            d_model,
+            mixer_cls,
+            mlp_cls=nn.Identity,
+            norm_cls=norm_cls,
+            fused_add_norm=fused_add_norm,
+            residual_in_fp32=residual_in_fp32,
+        )
+    else:
+        block = block_cls(
+            d_model,
+            mixer_cls,
+            norm_cls=norm_cls,
+            fused_add_norm=fused_add_norm,
+            residual_in_fp32=residual_in_fp32,
+        )
     block.layer_idx = layer_idx
     return block
 
