@@ -8,6 +8,7 @@ from functools import partial
 from typing import Optional, Tuple, Union
 
 import torch
+from mamba_ssm.modules.mamba_simple import Mamba
 try:
     from mamba_ssm.modules.mamba_simple import Block  # Legacy mambav1 file structure
 except ImportError:
