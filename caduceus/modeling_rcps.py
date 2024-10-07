@@ -10,9 +10,12 @@ from torch import nn
 from torch.nn import functional as F
 
 try:
-    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
+    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn  # Legacy mambav1 file structure
 except ImportError:
-    RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
+    try:
+        from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn  # mambav2 file structure
+    except ImportError:
+        RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 
 class RCPSEmbedding(nn.Module):
