@@ -360,6 +360,24 @@ class Caduceus(CaduceusPreTrainedModel):
         factory_kwargs = {"device": device, "dtype": dtype}
         self.backbone = CaduceusMixerModel(config, **factory_kwargs, **kwargs)
 
+    def maybe_weight_tie_mamba(self):
+        if getattr(self.config, 'bidirectional', False) and getattr(self.config, 'bidirectional_weight_tie', False):
+            if getattr(self.config, 'rcps', False):
+                for layer in self.backbone.layers:
+                    layer.mixer.submodule.mamba_rev.in_proj.weight = layer.mixer.submodule.mamba_fwd.in_proj.weight
+                    layer.mixer.submodule.mamba_rev.in_proj.bias = layer.mixer.submodule.mamba_fwd.in_proj.bias
+                    layer.mixer.submodule.mamba_rev.out_proj.weight = layer.mixer.submodule.mamba_fwd.out_proj.weight
+                    layer.mixer.submodule.mamba_rev.out_proj.bias = layer.mixer.submodule.mamba_fwd.out_proj.bias
+            else:
+                for layer in self.backbone.layers:
+                    layer.mixer.mamba_rev.in_proj.weight = layer.mixer.mamba_fwd.in_proj.weight
+                    layer.mixer.mamba_rev.in_proj.bias = layer.mixer.mamba_fwd.in_proj.bias
+                    layer.mixer.mamba_rev.out_proj.weight = layer.mixer.mamba_fwd.out_proj.weight
+                    layer.mixer.mamba_rev.out_proj.bias = layer.mixer.mamba_fwd.out_proj.bias
+
+    def tie_weights(self):
+        self.maybe_weight_tie_mamba()
+
     def forward(
             self,
             input_ids: torch.LongTensor = None,
@@ -431,8 +449,12 @@ class CaduceusForMaskedLM(CaduceusPreTrainedModel):
             raise NotImplementedError("Setting output embeddings for RCPS LM is not supported.")
         self.lm_head = new_embeddings
 
+    def maybe_weight_tie_mamba(self):
+        self.caduceus.maybe_weight_tie_mamba()
+
     def tie_weights(self):
         """Tie weights, accounting for RCPS."""
+        self.maybe_weight_tie_mamba()
         if self.config.rcps:
             self.lm_head.set_weight(self.get_input_embeddings().weight)
         else:
@@ -541,6 +563,13 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
             return hidden_states.moveaxis(hidden_states, sequence_length_dim, 0)[-1, ...]
         if self.pooling_strategy == "first":  # Use embedding of first token in the sequence
             return hidden_states.moveaxis(hidden_states, sequence_length_dim, 0)[0, ...]
+
+    def maybe_weight_tie_mamba(self):
+        self.caduceus.maybe_weight_tie_mamba()
+
+    def tie_weights(self):
+        self.maybe_weight_tie_mamba()
+        super().tie_weights()
 
     def forward(
         self,
