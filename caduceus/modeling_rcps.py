@@ -88,7 +88,7 @@ class RCPSWrapper(nn.Module):
         Args:
             x: Input tensor of shape (batch_size, seq_len, channels)
         Returns:
-            Output tensor of shape (batch_size, seq_len, channels * 2)
+            Output tensor of shape (batch_size, seq_len, channels)
         """
         n_channels = x.shape[-1]
         # Run submodule along sequence
