@@ -7,11 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-try:
-    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
-except ImportError:
-    RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
-
+from caduceus.compat.mamba import RMSNorm
 from caduceus.modeling_rcps import (
     RCPSEmbedding, RCPSAddNormWrapper, RCPSLMHead, RCPSWrapper
 )
@@ -108,6 +104,8 @@ def test_rcps_wrapper(batch_size, seq_len, d_model, dtype):
 @pytest.mark.parametrize("d_model", [128])
 @pytest.mark.parametrize("dtype", [torch.float16])
 def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, dtype):
+    if RMSNorm is None:
+        pytest.skip("Mamba Triton kernel for RMSNorm not available")
     # Set tolerance
     device = torch.device("cuda")
     rtol, atol = (6e-4, 2e-3) if dtype == torch.float32 else (3e-3, 5e-3)
@@ -126,11 +124,10 @@ def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, dtype):
     # Test RC equivariance of wrapper
     rcps_module = RCPSAddNormWrapper(norm).to(device)
     out = rcps_module(x)
-    rc_out = tuple([torch.flip(r, dims=[-2, -1]) for r in rcps_module(rc_x)])
-    for f, r in zip(out, rc_out):
-        assert f.size() == x.size()
-        assert r.size() == x.size()
-        assert torch.allclose(f.detach(), r.detach(), rtol=rtol, atol=atol)
+    rc_out = torch.flip(rcps_module(rc_x), dims=[-2, -1])
+    
+    assert x.size() == out.size() == rc_out.size()
+    assert torch.allclose(out.detach(), rc_out.detach(), rtol=rtol, atol=atol)
 
 
 @pytest.mark.parametrize("batch_size", [2])

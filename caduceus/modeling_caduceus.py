@@ -9,23 +9,12 @@ from typing import Optional, Tuple, Union
 
 import torch
 from mamba_ssm.modules.mamba_simple import Mamba
-try:
-    from mamba_ssm.modules.mamba_simple import Block  # Legacy mambav1 file structure
-except ImportError:
-    from mamba_ssm.modules.block import Block  # mambav2 file structure
 from torch import nn
 from torch.nn import functional as F
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import BaseModelOutputWithNoAttention, MaskedLMOutput, SequenceClassifierOutput
 
-try:
-    from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn  # Legacy mambav1 file structure
-except ImportError:
-    try:
-        from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn  # mambav2 file structure
-    except ImportError:
-        RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
-
+from .compat.mamba import Block, RMSNorm, layer_norm_fn, rms_norm_fn
 from .configuration_caduceus import CaduceusConfig
 from .modeling_rcps import RCPSAddNormWrapper, RCPSEmbedding, RCPSLMHead, RCPSMambaBlock
 
