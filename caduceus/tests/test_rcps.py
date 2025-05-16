@@ -7,16 +7,21 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-try:
+try:  # Legacy mambav1 file structure
     from mamba_ssm.ops.triton.layernorm import RMSNorm, layer_norm_fn, rms_norm_fn
 except ImportError:
-    RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
+    try:  # mambav2 file structure
+        from mamba_ssm.ops.triton.layer_norm import RMSNorm, layer_norm_fn, rms_norm_fn
+    except ImportError:
+        RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 from caduceus.modeling_rcps import (
     RCPSEmbedding, RCPSAddNormWrapper, RCPSLMHead, RCPSWrapper
 )
 
-from caduceus.modeling_caduceus import CaduceusConfig, CaduceusMixerModel, CaduceusForMaskedLM, create_block
+from caduceus.modeling_caduceus import (
+    CaduceusConfig, CaduceusMixerModel, CaduceusForMaskedLM, create_block
+)
 
 
 @pytest.mark.parametrize("batch_size", [4])
@@ -106,8 +111,9 @@ def test_rcps_wrapper(batch_size, seq_len, d_model, dtype):
 @pytest.mark.parametrize("batch_size", [2])
 @pytest.mark.parametrize("seq_len", [1024])
 @pytest.mark.parametrize("d_model", [128])
+@pytest.mark.parametrize("prenorm", [False, True])
 @pytest.mark.parametrize("dtype", [torch.float16])
-def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, dtype):
+def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, prenorm, dtype):
     # Set tolerance
     device = torch.device("cuda")
     rtol, atol = (6e-4, 2e-3) if dtype == torch.float32 else (3e-3, 5e-3)
@@ -125,12 +131,19 @@ def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, dtype):
 
     # Test RC equivariance of wrapper
     rcps_module = RCPSAddNormWrapper(norm).to(device)
-    out = rcps_module(x)
-    rc_out = tuple([torch.flip(r, dims=[-2, -1]) for r in rcps_module(rc_x)])
-    for f, r in zip(out, rc_out):
-        assert f.size() == x.size()
-        assert r.size() == x.size()
-        assert torch.allclose(f.detach(), r.detach(), rtol=rtol, atol=atol)
+    out = rcps_module(x, prenorm=prenorm)
+    if prenorm:  # returns tuple
+        rc_out = tuple([torch.flip(r, dims=[-2, -1])
+                        for r in rcps_module(rc_x, prenorm=prenorm)])
+        for f, r in zip(out, rc_out):
+            assert f.size() == x.size()
+            assert r.size() == x.size()
+            assert torch.allclose(f.detach(), r.detach(), rtol=rtol, atol=atol)
+    else:
+        rc_out = torch.flip(rcps_module(rc_x, prenorm=prenorm), dims=[-2, -1])
+        assert out.size() == x.size()
+        assert rc_out.size() == x.size()
+        assert torch.allclose(out.detach(), rc_out.detach(), rtol=rtol, atol=atol)
 
 
 @pytest.mark.parametrize("batch_size", [2])
@@ -249,7 +262,7 @@ def test_rcps_lm_head(batch_size, seq_len, d_model, dtype):
 
 @pytest.mark.parametrize("batch_size", [2, 4])
 @pytest.mark.parametrize("seq_len", [1024, 2048])
-@pytest.mark.parametrize("n_layer", [1, 2])
+@pytest.mark.parametrize("n_layer", [1, 2, 3])
 @pytest.mark.parametrize("d_model", [128, 256])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float16])
 @pytest.mark.parametrize("fused_add_norm", [True, False])
@@ -327,7 +340,7 @@ def test_rcps_backbone(batch_size, seq_len, n_layer, d_model, dtype, fused_add_n
 
 @pytest.mark.parametrize("batch_size", [2, 4])
 @pytest.mark.parametrize("seq_len", [1024, 2048])
-@pytest.mark.parametrize("n_layer", [1, 4])
+@pytest.mark.parametrize("n_layer", [1, 3, 4])
 @pytest.mark.parametrize("d_model", [128, 256])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float16])
 @pytest.mark.parametrize("bidirectional", [False, True])
