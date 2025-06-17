@@ -70,7 +70,7 @@ mkdir watch_folder
 
 ## Reproducing Experiments
 
-Below, we describe the steps required for reproducing the experiments in the paper.
+Below, we describe the steps required for reproducing the experiments in the paper from our [v0.1.0](https://github.com/kuleshov-group/caduceus/releases/tag/v0.1.0) release.
 Throughout, the main entry point for running experiments is the [`train.py`](./train.py) script.
 We also provide sample `slurm` scripts for launching pre-training and downstream fine-tuning experiments in the [`slurm_scripts/`](./slurm_scripts) directory.
 
