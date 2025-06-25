@@ -34,6 +34,7 @@ class CaduceusConfig(PretrainedConfig):
             bidirectional_strategy: Union[str, None] = "add",
             bidirectional_weight_tie: bool = True,
             rcps: bool = False,
+            gradient_checkpointing_stride: int = 1,
             complement_map: Optional[dict] = None,  # used for RCPSEmbedding / RCPSLMHead
             **kwargs,
     ):
@@ -52,4 +53,5 @@ class CaduceusConfig(PretrainedConfig):
         self.bidirectional_strategy = bidirectional_strategy
         self.bidirectional_weight_tie = bidirectional_weight_tie
         self.rcps = rcps
+        self.gradient_checkpointing_stride = gradient_checkpointing_stride
         self.complement_map = complement_map
