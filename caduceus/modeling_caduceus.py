@@ -541,6 +541,7 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
             return hidden_states.moveaxis(hidden_states, sequence_length_dim, 0)[-1, ...]
         if self.pooling_strategy == "first":  # Use embedding of first token in the sequence
             return hidden_states.moveaxis(hidden_states, sequence_length_dim, 0)[0, ...]
+        raise NotImplementedError(f"Pooling strategy `{self.pooling_strategy}` not implemented.")
 
     def forward(
         self,
@@ -559,7 +560,7 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # Get hidden representations from the backbone
-        if self.config.rcps:  # Hidden states have 2 * d_model channels for RCPS
+        if self.config.rcps:
             transformer_outputs = self.caduceus(
                 input_ids,
                 inputs_embeds=inputs_embeds,
@@ -568,8 +569,8 @@ class CaduceusForSequenceClassification(CaduceusPreTrainedModel):
             )
             hidden_states = torch.stack(
                 [
-                    transformer_outputs[0][..., :self.config.d_model],
-                    torch.flip(transformer_outputs[0][..., self.config.d_model:], dims=[1, 2])
+                    transformer_outputs[0],
+                    torch.flip(transformer_outputs[0], dims=[1, 2])
                  ],
                 dim=-1
             )
