@@ -233,7 +233,7 @@ def test_rcps_lm_head(batch_size, seq_len, d_model, dtype):
     lm_head = RCPSLMHead(
         complement_map=complement_map,
         vocab_size=vocab_size,
-        true_dim=d_model,
+        dim=d_model,
         **factory_kwargs
     )
 

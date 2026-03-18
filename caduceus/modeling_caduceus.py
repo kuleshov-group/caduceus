@@ -400,7 +400,7 @@ class CaduceusForMaskedLM(CaduceusPreTrainedModel):
             self.lm_head = RCPSLMHead(
                 complement_map=self.config.complement_map,  # Use caduceus config as it might have been updated
                 vocab_size=self.config.vocab_size,  # Use caduceus config as it might have been updated
-                true_dim=config.d_model,
+                dim=config.d_model,
                 dtype=dtype
             )
         else:

@@ -24,7 +24,7 @@ class RCPSEmbedding(nn.Module):
         """
         Args:
             vocab_size: Size of vocabulary.
-            d_model: Dimensionality of embedding (actual embedding matrix will have 1/2 the output dim).
+            d_model: Dimensionality of embedding
             complement_map: Dictionary mapping each token id to its complement.
         """
         super().__init__()
@@ -54,12 +54,10 @@ class RCPSEmbedding(nn.Module):
     def forward(self, input_ids):
         """Reverse-complement equivariant forward pass.
 
-        This embedding module doubles the output dimensionality to support reverse-complement equivariance.
-
         Args:
             input_ids: Input tensor of shape (batch_size, seq_len)
         Returns:
-            Embedding tensor of shape (batch_size, seq_len, d_model * 2)
+            Embedding tensor of shape (batch_size, seq_len, d_model)
         """
         fwd_out = self.embedding(input_ids)
         rc_out = self.embedding(self.rc(input_ids))
@@ -111,7 +109,6 @@ class RCPSAddNormWrapper(RCPSWrapper):
             residual: Residual tensor of shape (batch_size, seq_len, channels) or None.
             prenorm: Whether to return residual.
         """
-        n_channels = x.shape[-1]
         if residual is None:
             residual = x
             x_fwd = self.submodule(x.to(dtype=self.submodule.weight.dtype))
@@ -207,19 +204,15 @@ class RCPSMambaBlock(nn.Module):
 
 
 class RCPSLMHead(nn.Module):
-    """LM Head for reverse-complement equivariant inputs, which have dim * 2 relative to standard inputs."""
-    def __init__(self, true_dim: int, vocab_size: int, complement_map: dict, **factory_kwargs):
-        """
-        `true_dim` corresponds to the actual dimensionality of the input were it not reverse-complement
-        equivariant, i.e. 0.5 times the actual input dim.
-        """
+    """LM Head for reverse-complement equivariant inputs."""
+    def __init__(self, dim: int, vocab_size: int, complement_map: dict, **factory_kwargs):
         super().__init__()
         self.register_buffer(
             "complement_map",
             torch.tensor(list(OrderedDict(complement_map).values()), dtype=torch.long)
         )
-        self.true_dim = true_dim
-        self.lm_head = nn.Linear(true_dim, vocab_size, bias=False, **factory_kwargs)
+        self.true_dim = dim
+        self.lm_head = nn.Linear(dim, vocab_size, bias=False, **factory_kwargs)
 
     @property
     def weight(self):
@@ -233,7 +226,7 @@ class RCPSLMHead(nn.Module):
     def forward(self, x):
         """
         Args:
-            x: Input tensor of shape (batch_size, seq_len, dim), where dim = 2 * true_dim.
+            x: Input tensor of shape (batch_size, seq_len, dim)
         """
         fwd_logits = F.linear(x, self.weight, bias=self.lm_head.bias)
         rc_logits = F.linear(
