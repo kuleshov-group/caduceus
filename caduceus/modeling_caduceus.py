@@ -242,24 +242,24 @@ class CaduceusMixerModel(nn.Module):
             if self.rcps:
                 # Set prenorm=False here since we don't need the residual
                 hidden_states_fwd = fused_add_norm_fn(
-                    hidden_states[..., :hidden_states.shape[-1] // 2],
+                    hidden_states,
                     self.norm_f.weight,
                     self.norm_f.bias,
                     eps=self.norm_f.eps,
-                    residual=residual[..., :hidden_states.shape[-1] // 2],
+                    residual=residual,
                     prenorm=False,
                     residual_in_fp32=self.residual_in_fp32,
                 )
                 hidden_states_rc = fused_add_norm_fn(
-                    hidden_states[..., hidden_states.shape[-1] // 2:].flip(dims=[-2, -1]),
+                    hidden_states.flip(dims=[-2, -1]),
                     self.norm_f.weight,
                     self.norm_f.bias,
                     eps=self.norm_f.eps,
-                    residual=residual[..., hidden_states.shape[-1] // 2:].flip(dims=[-2, -1]),
+                    residual=residual.flip(dims=[-2, -1]),
                     prenorm=False,
                     residual_in_fp32=self.residual_in_fp32,
                 )
-                hidden_states = torch.cat([hidden_states_fwd, hidden_states_rc.flip(dims=[-2, -1])], dim=-1)
+                hidden_states = (hidden_states_fwd + hidden_states_rc.flip(dims=[-2, -1])) / 2
             else:
                 # Set prenorm=False here since we don't need the residual
                 hidden_states = fused_add_norm_fn(

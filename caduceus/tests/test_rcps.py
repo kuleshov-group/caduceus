@@ -67,8 +67,8 @@ def test_rcps_embedding(batch_size, seq_len, d_model, dtype):
     out_embed = embedding(input_ids)
     rc_out_embed = torch.flip(embedding(rc_input_ids), dims=[-2, -1])
     # Test that channels are 2 * d_model
-    assert tuple(out_embed.size()) == (batch_size, seq_len, d_model * 2)
-    assert tuple(rc_out_embed.size()) == (batch_size, seq_len, d_model * 2)
+    assert tuple(out_embed.size()) == (batch_size, seq_len, d_model)
+    assert tuple(rc_out_embed.size()) == (batch_size, seq_len, d_model)
     # Test that RC equivariance holds
     assert torch.allclose(out_embed.detach(), rc_out_embed.detach(), rtol=rtol, atol=atol)
 
@@ -87,14 +87,14 @@ def test_rcps_wrapper(batch_size, seq_len, d_model, dtype):
     torch.random.manual_seed(0)
 
     # Generate random sequence with 2 * d_model channels
-    x = torch.randn(batch_size, seq_len, d_model * 2, device=device, dtype=dtype)
+    x = torch.randn(batch_size, seq_len, d_model, device=device, dtype=dtype)
     rc_x = torch.flip(x, dims=[-2, -1])
 
     factory_kwargs = {"device": device, "dtype": dtype}
     module = nn.Sequential(
         nn.Linear(d_model, d_model, bias=False, **factory_kwargs),
         nn.ReLU(),
-        nn.Linear(d_model, d_model*2, bias=True, **factory_kwargs),
+        nn.Linear(d_model, d_model * 2, bias=True, **factory_kwargs),
         nn.ReLU(),
         nn.Linear(d_model * 2, d_model, bias=True, **factory_kwargs)
     )
@@ -123,7 +123,7 @@ def test_rcps_add_norm_wrapper(batch_size, seq_len, d_model, prenorm, dtype):
     torch.random.manual_seed(0)
 
     # Generate random sequence with 2 * d_model channels
-    x = torch.randn(batch_size, seq_len, d_model * 2, device=device, dtype=dtype)
+    x = torch.randn(batch_size, seq_len, d_model, device=device, dtype=dtype)
     rc_x = torch.flip(x, dims=[-2, -1])
 
     factory_kwargs = {"device": device, "dtype": dtype}
@@ -162,7 +162,7 @@ def test_rcps_mamba_block_wrapper(batch_size, seq_len, d_model, bidirectional, f
     torch.random.manual_seed(0)
 
     # Generate random sequence with 2 * d_model channels
-    x = torch.randn(batch_size, seq_len, d_model * 2, device=device, dtype=dtype)
+    x = torch.randn(batch_size, seq_len, d_model, device=device, dtype=dtype)
     rc_x = torch.flip(x, dims=[-2, -1])
 
     ssm_cfg = {
@@ -238,7 +238,7 @@ def test_rcps_lm_head(batch_size, seq_len, d_model, dtype):
     )
 
     # Generate random sequence with 2 * d_model channels
-    x = torch.randn(batch_size, seq_len, d_model * 2, device=device, dtype=dtype)
+    x = torch.randn(batch_size, seq_len, d_model, device=device, dtype=dtype)
     rc_x = torch.flip(x, dims=[-2, -1])
 
     # Test RC equivariance of LM head
@@ -328,13 +328,13 @@ def test_rcps_backbone(batch_size, seq_len, n_layer, d_model, dtype, fused_add_n
     if isinstance(rc_out, tuple):
         rc_out = tuple([torch.flip(r, dims=[1, 2]) for r in rc_out])
         for f, r in zip(out, rc_out):
-            assert f.size() == (batch_size, seq_len, d_model * 2)
-            assert r.size() == (batch_size, seq_len, d_model * 2)
+            assert f.size() == (batch_size, seq_len, d_model)
+            assert r.size() == (batch_size, seq_len, d_model)
             assert torch.allclose(f.detach(), r.detach(), rtol=rtol, atol=atol)
     else:
         # Hidden state size should double
-        assert tuple(out.size()) == (batch_size, seq_len, d_model * 2)
-        assert tuple(rc_out.size()) == (batch_size, seq_len, d_model * 2)
+        assert tuple(out.size()) == (batch_size, seq_len, d_model)
+        assert tuple(rc_out.size()) == (batch_size, seq_len, d_model)
         assert torch.allclose(out.detach(), torch.flip(rc_out.detach(), dims=[1, 2]), rtol=rtol, atol=atol)
 
 
@@ -481,9 +481,9 @@ def test_collapse_invariance(batch_size, seq_len, n_layer, d_model, dtype, bidir
 
     # Test RC Invariance when collapsing output of backbone
     out = backbone(input_ids)[0]
-    out_collapse = (out[..., :d_model] + torch.flip(out[..., d_model:], dims=[1, 2])) / 2
+    out_collapse = (out + torch.flip(out, dims=[1, 2])) / 2
     rc_out = backbone(rc_input_ids)[0]
-    rc_out_collapse = (rc_out[..., :d_model] + torch.flip(rc_out[..., d_model:], dims=[1, 2])) / 2
+    rc_out_collapse = (rc_out + torch.flip(rc_out, dims=[1, 2])) / 2
     # Hidden state size should be d_model
     assert tuple(out_collapse.size()) == (batch_size, seq_len, d_model)
     assert tuple(rc_out_collapse.size()) == (batch_size, seq_len, d_model)

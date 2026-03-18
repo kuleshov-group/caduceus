@@ -62,9 +62,9 @@ class RCPSEmbedding(nn.Module):
             Embedding tensor of shape (batch_size, seq_len, d_model * 2)
         """
         fwd_out = self.embedding(input_ids)
-        rc_out = torch.flip(self.embedding(self.rc(input_ids)), dims=[-2, -1])
+        rc_out = self.embedding(self.rc(input_ids))
 
-        return torch.cat([fwd_out, rc_out], dim=-1)
+        return (fwd_out + torch.flip(rc_out, dims=[-2, -1])) / 2
 
 
 class RCPSWrapper(nn.Module):
@@ -92,11 +92,11 @@ class RCPSWrapper(nn.Module):
         """
         n_channels = x.shape[-1]
         # Run submodule along sequence
-        fwd_out = self.submodule(x[..., :n_channels // 2], **kwargs)
+        fwd_out = self.submodule(x, **kwargs)
         # Run submodule along rc-sequence
-        rc_out = self.submodule(self.rc(x[..., n_channels // 2:]), **kwargs)
+        rc_out = self.submodule(self.rc(x), **kwargs)
         # Concatenate along channel dimension (dim=-1)
-        return torch.cat([fwd_out, self.rc(rc_out)], dim=-1)
+        return (fwd_out + self.rc(rc_out)) / 2
 
 
 class RCPSAddNormWrapper(RCPSWrapper):
@@ -114,18 +114,18 @@ class RCPSAddNormWrapper(RCPSWrapper):
         n_channels = x.shape[-1]
         if residual is None:
             residual = x
-            x_fwd = self.submodule(x[..., :n_channels // 2].to(dtype=self.submodule.weight.dtype))
-            x_rc = self.submodule(self.rc(x[..., n_channels // 2:]).to(dtype=self.submodule.weight.dtype))
-            x = torch.cat([x_fwd, self.rc(x_rc)], dim=-1)
+            x_fwd = self.submodule(x.to(dtype=self.submodule.weight.dtype))
+            x_rc = self.submodule(self.rc(x).to(dtype=self.submodule.weight.dtype))
+            x = (x_fwd + self.rc(x_rc)) / 2
         else:
-            residual_fwd = x[..., :n_channels // 2] + residual[..., :n_channels // 2]
+            residual_fwd = x + residual
             x_fwd = self.submodule(residual_fwd.to(dtype=self.submodule.weight.dtype))
 
-            residual_rc = self.rc(x[..., n_channels // 2:]) + self.rc(residual[..., n_channels // 2:])
+            residual_rc = self.rc(x) + self.rc(residual)
             x_rc = self.submodule(residual_rc.to(dtype=self.submodule.weight.dtype))
 
-            residual = torch.cat([residual_fwd, self.rc(residual_rc)], dim=-1)
-            x = torch.cat([x_fwd, self.rc(x_rc)], dim=-1)
+            residual = (residual_fwd + self.rc(residual_rc)) / 2
+            x = (x_fwd + self.rc(x_rc)) / 2
 
         return x if not prenorm else (x, residual)
 
@@ -175,26 +175,26 @@ class RCPSMambaBlock(nn.Module):
             fused_add_norm_fn = rms_norm_fn if isinstance(self.norm, RMSNorm) else layer_norm_fn
 
             hidden_states_fwd, residual_fwd = fused_add_norm_fn(
-                hidden_states[..., hidden_states.shape[-1] // 2:],
+                hidden_states,
                 self.norm.weight,
                 self.norm.bias,
-                residual=residual[..., hidden_states.shape[-1] // 2:] if residual is not None else None,
+                residual=residual if residual is not None else None,
                 prenorm=True,
                 residual_in_fp32=self.residual_in_fp32,
                 eps=self.norm.eps,
             )
 
             hidden_states_rc, residual_rc = fused_add_norm_fn(
-                hidden_states[..., :hidden_states.shape[-1] // 2].flip(dims=[-2, -1]),
+                hidden_states.flip(dims=[-2, -1]),
                 self.norm.weight,
                 self.norm.bias,
-                residual=residual[..., :hidden_states.shape[-1] // 2].flip(dims=[-2, -1]) if residual is not None else None,
+                residual=residual.flip(dims=[-2, -1]) if residual is not None else None,
                 prenorm=True,
                 residual_in_fp32=self.residual_in_fp32,
                 eps=self.norm.eps,
             )
-            hidden_states = torch.cat([hidden_states_fwd, hidden_states_rc.flip(dims=[-2, -1])], dim=-1)
-            residual = torch.cat([residual_fwd, residual_rc.flip(dims=[-2, -1])], dim=-1)
+            hidden_states = (hidden_states_fwd + hidden_states_rc.flip(dims=[-2, -1])) / 2
+            residual = (residual_fwd + residual_rc.flip(dims=[-2, -1])) / 2
         hidden_states = self.mixer(hidden_states, inference_params=inference_params)
         return hidden_states, residual
 
@@ -235,12 +235,10 @@ class RCPSLMHead(nn.Module):
         Args:
             x: Input tensor of shape (batch_size, seq_len, dim), where dim = 2 * true_dim.
         """
-        n_channels = x.shape[-1]
-        assert n_channels == 2 * self.true_dim, "Input must have 2 * true_dim channels."
-        fwd_logits = F.linear(x[..., :n_channels // 2], self.weight, bias=self.lm_head.bias)
+        fwd_logits = F.linear(x, self.weight, bias=self.lm_head.bias)
         rc_logits = F.linear(
-            torch.flip(x[..., n_channels // 2:], dims=[-1]),
+            torch.flip(x, dims=[-1]),
             self.weight[self.complement_map, :],
             bias=self.lm_head.bias
         )
-        return fwd_logits + rc_logits
+        return (fwd_logits + rc_logits) / 2
